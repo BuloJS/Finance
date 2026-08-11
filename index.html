@@ -416,7 +416,7 @@ table.ledger { border-collapse: separate; border-spacing: 0; width: 100%; }
   height: var(--hd-2);
   background-color: var(--surface);
   font-size: 11.5px; font-weight: 600; color: var(--ink-2);
-  padding: 0 10px;
+  padding: 0 9px;
 }
 .ledger thead tr.labels th::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: var(--line-strong);
@@ -450,7 +450,7 @@ table.ledger { border-collapse: separate; border-spacing: 0; width: 100%; }
 .cell-input {
   width: 100%; height: var(--row-h);
   border: 0; background: transparent;
-  padding: 0 10px;
+  padding: 0 9px;
   text-align: right;
   font-family: var(--mono); font-size: 12.5px; font-variant-numeric: tabular-nums;
   color: var(--ink);
@@ -464,7 +464,7 @@ table.ledger { border-collapse: separate; border-spacing: 0; width: 100%; }
 
 /* Computed cell — a translucent wash so the zebra and the row hover still read through */
 .calc {
-  display: block; padding: 0 10px; line-height: var(--row-h);
+  display: block; padding: 0 9px; line-height: var(--row-h);
   font-family: var(--mono); font-size: 12.5px; font-variant-numeric: tabular-nums;
   color: var(--ink-2);
 }
@@ -489,7 +489,7 @@ td.is-total .calc { color: var(--ink); font-weight: 600; }
   background-color: var(--surface);
   border-top: 1px solid var(--line-strong);
   font-family: var(--mono); font-size: 12.5px; font-weight: 600;
-  padding: 0 10px;
+  padding: 0 9px;
 }
 .ledger tfoot td.c-mois {
   z-index: 7;
@@ -623,8 +623,10 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
         <div>
           <h3>Colonnes calculées</h3>
           <dl>
+            <dt>Base</dt>
+            <dd>Ce que vous décidez de mettre de côté ce mois-ci. <code>Ctrl</code>+<code>D</code> la recopie sur toute l'année.</dd>
             <dt>Reste</dt>
-            <dd>Rentrée − Achats − (Livret + PEA + PEL)</dd>
+            <dd><code>Base + Rentrée − Achats − (Livret + PEA + PEL)</code> — ce qu'il vous reste de la somme mise de côté. Rentrée et Achats sont des mouvements <em>en plus</em> de la base : une rentrée exceptionnelle augmente ce que vous pouvez placer, un achat le réduit.</dd>
             <dt>Cumul (par enveloppe)</dt>
             <dd><code>cumul = cumul<sub>m-1</sub> × (1 + taux/12) + versement<sub>m</sub></code> — les intérêts courent sur l'encours du mois précédent, le taux saisi étant annuel.</dd>
             <dt>Total</dt>
@@ -694,6 +696,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
   // Column order is the user's spreadsheet order, untouched.
   var COLS = [
     { key: "mois",    label: "Mois",                    group: "",            kind: "month" },
+    { key: "base",    label: "Base",                    group: "Prévu",       kind: "money", edit: true },
     { key: "livret",  label: "Livret",                  group: "Versements",  kind: "money", edit: true },
     { key: "pea",     label: "PEA",                     group: "Versements",  kind: "money", edit: true },
     { key: "pel",     label: "PEL",                     group: "Versements",  kind: "money", edit: true },
@@ -718,7 +721,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
   var STORAGE_KEY = "compta.epargne.v1";
 
   function emptyRow() {
-    return { livret: null, pea: null, pel: null, rentree: null, achats: null, bonus: null,
+    return { base: null, livret: null, pea: null, pel: null, rentree: null, achats: null, bonus: null,
              tLivret: null, tPea: null, tPel: null };
   }
   function emptyYear() {
@@ -860,7 +863,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     };
     var out = [];
     var runningDeposits = 0;
-    var sum = { versements: 0, rentree: 0, achats: 0, bonus: 0, reste: 0 };
+    var sum = { base: 0, versements: 0, rentree: 0, achats: 0, bonus: 0, reste: 0 };
 
     for (var m = 0; m < 12; m++) {
       var r = rows[m];
@@ -879,20 +882,26 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
         depositsTotal += dep;
       });
 
+      var base = r.base || 0;
       var rentree = r.rentree || 0;
       var achats = r.achats || 0;
       runningDeposits += depositsTotal;
 
       line.month = m;
       line.filled = EDIT_KEYS.some(function (k) { return r[k] != null && !/^t[A-Z]/.test(k); });
+      line.base = base;
       line.versements = depositsTotal;
       line.rentree = rentree;
       line.achats = achats;
       line.bonus = r.bonus || 0;
-      line.reste = rentree - achats - depositsTotal;
+      // What is left of the amount set aside for the month: the base decided up
+      // front, adjusted by any extra income or extra purchase, minus what has
+      // actually been placed in the three envelopes.
+      line.reste = base + rentree - achats - depositsTotal;
       line.total = line.cumuls.livret + line.cumuls.pea + line.cumuls.pel;
       line.annee = runningDeposits;
 
+      sum.base += base;
       sum.versements += depositsTotal;
       sum.rentree += rentree;
       sum.achats += achats;
@@ -1068,6 +1077,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     }
 
     var s = view.sum, last = view.lines[11];
+    footEls.base.textContent = fmtMoney(round2(s.base));
     footEls.livret.textContent = fmtMoney(round2(sumKey("livret")));
     footEls.pea.textContent = fmtMoney(round2(sumKey("pea")));
     footEls.pel.textContent = fmtMoney(round2(sumKey("pel")));
@@ -1183,9 +1193,12 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
   function renderSummary() {
     var s = view.sum;
     var last = view.lines[11];
-    var filledMonths = view.lines.filter(function (l) { return l.filled; }).length || 0;
-    var perMonth = filledMonths ? s.versements / filledMonths : 0;
-    var rate = s.rentree > 0 ? (s.versements / s.rentree) * 100 : 0;
+    // Months where something was actually placed — a base filled in for the whole
+    // year up front must not dilute the monthly average.
+    var monthsSaved = view.lines.filter(function (l) { return l.versements > 0; }).length;
+    var perMonth = monthsSaved ? s.versements / monthsSaved : 0;
+    var placed = s.base > 0 ? (s.versements / s.base) * 100 : 0;
+    var extras = s.rentree - s.achats;
     var gain = view.endTotal - view.startTotal - s.versements;
 
     var host = $("summary");
@@ -1195,16 +1208,25 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
       cls: "hero",
       label: "Épargne " + state.current,
       value: fmtCompact(s.versements),
-      foot: filledMonths
-        ? "Sur <strong>" + filledMonths + "</strong> mois saisis · <strong>" + fmtCompact(perMonth) + "</strong> par mois"
+      foot: monthsSaved
+        ? "Sur <strong>" + monthsSaved + "</strong> mois · <strong>" + fmtCompact(perMonth) + "</strong> par mois"
         : "Saisissez un premier mois pour démarrer"
     }));
 
-    host.appendChild(tile({
-      label: "Rentrées",
-      value: fmtCompact(s.rentree),
-      foot: "Achats <strong>" + fmtCompact(s.achats) + "</strong>"
-    }));
+    var t = tile({
+      label: "Base d'épargne",
+      value: fmtCompact(s.base),
+      foot: s.base > 0
+        ? "<strong>" + fmtCompact(s.versements) + "</strong> placés · <strong>"
+          + nfRate.format(Math.round(placed * 10) / 10) + " %</strong> de la base"
+        : "Indiquez ce que vous décidez de mettre de côté"
+    });
+    var meter = el("div", "meter");
+    var fill = el("span");
+    fill.style.width = Math.max(0, Math.min(100, placed)) + "%";
+    meter.appendChild(fill);
+    t.insertBefore(meter, t.querySelector(".foot"));
+    host.appendChild(t);
 
     host.appendChild(tile({
       label: "Reste à placer",
@@ -1213,17 +1235,12 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
       foot: "Bonus potentiel <strong>" + fmtCompact(s.bonus) + "</strong>"
     }));
 
-    var t = tile({
-      label: "Taux d'épargne",
-      value: nfRate.format(Math.round(rate * 10) / 10) + " %",
-      foot: "Part des rentrées mise de côté"
-    });
-    var meter = el("div", "meter");
-    var fill = el("span");
-    fill.style.width = Math.max(0, Math.min(100, rate)) + "%";
-    meter.appendChild(fill);
-    t.insertBefore(meter, t.querySelector(".foot"));
-    host.appendChild(t);
+    host.appendChild(tile({
+      label: "Rentrées & achats en plus",
+      value: (extras > 0 ? "+" : "") + fmtCompact(extras),
+      tone: extras < 0 ? "neg" : (extras > 0 ? "pos" : ""),
+      foot: "Rentrées <strong>" + fmtCompact(s.rentree) + "</strong> · Achats <strong>" + fmtCompact(s.achats) + "</strong>"
+    }));
 
     host.appendChild(tile({
       label: "Patrimoine fin " + state.current,
@@ -1268,7 +1285,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     host.innerHTML = "";
     items.forEach(function (it) {
       var n = el("span", "legend-item");
-      var key = el("span", "legend-key" + (shape === "square" ? " square" : ""));
+      var key = el("span", "legend-key" + ((it.shape || shape) === "square" ? " square" : ""));
       key.style.background = it.color;
       n.appendChild(key);
       n.appendChild(document.createTextNode(it.label));
@@ -1432,10 +1449,15 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
       };
     });
 
-    renderLegend($("legend-effort"), series, "square");
-
     var totals = view.lines.map(function (l) { return l.versements; });
-    var peak = Math.max.apply(null, totals);
+    var bases = view.lines.map(function (l) { return l.base; });
+    var anyBase = bases.some(function (b) { return b > 0; });
+
+    var legend = series.slice();
+    if (anyBase) legend.push({ label: "Base visée", color: cssVar("--ink-3"), shape: "line" });
+    renderLegend($("legend-effort"), legend, "square");
+
+    var peak = Math.max.apply(null, totals.concat(bases));
     var months = totals.filter(function (t) { return t > 0; }).length;
     $("effort-sub").textContent = months ? "moy. " + fmtCompact(view.sum.versements / months) + " / mois" : "";
 
@@ -1498,6 +1520,16 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
       });
     }
 
+    // Target marker: where the month's base sits, so a short column is readable
+    // as "missed the target" and not just "a small month".
+    bases.forEach(function (b, i) {
+      if (b <= 0) return;
+      svg.appendChild(svgEl("line", {
+        x1: cx(i) - bw / 2 - 3, x2: cx(i) + bw / 2 + 3, y1: y(b), y2: y(b),
+        stroke: cssVar("--ink-3"), "stroke-width": 2, "stroke-linecap": "round"
+      }));
+    });
+
     var hover = svgEl("rect", { y: pad.t, height: ih, fill: cssVar("--accent"), opacity: 0, rx: 4 });
     svg.insertBefore(hover, svg.firstChild.nextSibling);
 
@@ -1520,8 +1552,11 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
       var rows = series.map(function (s) {
         return '<div class="tt-row"><span class="k" style="background:' + s.color + '"></span><span class="n">' + s.label + '</span><span class="v">' + fmtMoney0(s.values[i]) + "</span></div>";
       }).join("");
-      tip.innerHTML = '<div class="tt-head">' + MONTHS[i] + " " + state.current + "</div>" + rows +
-        '<div class="tt-row tt-total"><span class="n">Versé</span><span class="v">' + fmtMoney0(totals[i]) + "</span></div>";
+      var foot = '<div class="tt-row tt-total"><span class="n">Versé</span><span class="v">' + fmtMoney0(totals[i]) + "</span></div>";
+      if (bases[i] > 0) {
+        foot += '<div class="tt-row"><span class="n">Base visée</span><span class="v">' + fmtMoney0(bases[i]) + "</span></div>";
+      }
+      tip.innerHTML = '<div class="tt-head">' + MONTHS[i] + " " + state.current + "</div>" + rows + foot;
       tip.dataset.show = "true";
       positionTip(tip, host, (cx(i) * box.width) / W, ev.clientY - box.top);
     });
@@ -1648,7 +1683,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     for (var m = 0; m < 12; m++) {
       var r = state.years[state.current].rows[m], l = view.lines[m];
       lines.push([
-        MONTHS[m], fr(r.livret || 0), fr(r.pea || 0), fr(r.pel || 0), fr(l.reste),
+        MONTHS[m], fr(r.base || 0), fr(r.livret || 0), fr(r.pea || 0), fr(r.pel || 0), fr(l.reste),
         fr(r.rentree || 0), fr(r.achats || 0), fr(r.bonus || 0),
         fr(l.rates.livret), fr(l.rates.pea), fr(l.rates.pel),
         fr(l.cumuls.livret), fr(l.cumuls.pea), fr(l.cumuls.pel),

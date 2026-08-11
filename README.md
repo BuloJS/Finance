@@ -11,17 +11,28 @@ Ouvrez-le dans un navigateur (double-clic) et c'est prêt.
 
 | Saisi | Calculé |
 |---|---|
-| Livret, PEA, PEL (versements du mois) | Reste |
-| Rentrée, Achats | Cumul Livret / PEA / PEL |
-| Invest bonus potentiel | Total |
-| Taux Livret / PEA / PEL (annuels) | Somme par an |
+| **Base** (ce que vous décidez de mettre de côté) | Reste |
+| Livret, PEA, PEL (versements du mois) | Cumul Livret / PEA / PEL |
+| Rentrée, Achats (mouvements *en plus* de la base) | Total |
+| Invest bonus potentiel | Somme par an |
+| Taux Livret / PEA / PEL (annuels) | |
 
 ```
-Reste  = Rentrée − Achats − (Livret + PEA + PEL)
+Reste  = Base + Rentrée − Achats − (Livret + PEA + PEL)
 Cumul  = Cumul(m−1) × (1 + taux/12) + versement(m)
 Total  = Cumul Livret + Cumul PEA + Cumul PEL
 Somme par an = cumul des versements depuis janvier
 ```
+
+**Le Reste, c'est ce qu'il vous reste de la somme mise de côté.** Vous décidez
+1 000 € pour le mois, vous placez 400 sur le Livret, 300 sur le PEA et 100 sur le
+PEL : il reste 200 € à placer. Rentrée et Achats viennent *en plus* de cette base —
+une rentrée exceptionnelle augmente ce que vous pouvez encore placer, un achat le
+réduit. Un Reste négatif signifie que vous avez placé plus que ce que vous aviez
+prévu.
+
+Une Base laissée vide vaut zéro : le Reste redevient alors simplement
+`Rentrée − Achats − versements`.
 
 Les intérêts courent sur l'encours du mois précédent, le taux saisi étant annuel.
 La ligne **Année** en bas du tableau totalise les versements et reprend les cumuls
@@ -34,6 +45,8 @@ de décembre.
 ## Saisie
 
 - **Formats acceptés** : `1200`, `1 200,50`, `1200.5`, `-80`, avec ou sans `€` / `%`.
+- **La base se recopie sur l'année entière** avec `Ctrl`/`Cmd`+`D` depuis janvier —
+  et se corrige au cas par cas sur les mois qui sortent de l'ordinaire.
 - **Un taux vaut pour les mois suivants** tant qu'un autre ne le remplace pas — il
   s'affiche en grisé sur les mois où il est hérité, et il se propage aussi d'une
   année sur l'autre.
