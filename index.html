@@ -316,7 +316,9 @@ button, input, select { font: inherit; color: inherit; }
   padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 13px;
 }
 .menu-panel button:hover { background: var(--surface-2); color: var(--ink); }
-.menu-panel button.danger:hover { background: var(--out-bg); color: var(--out-ink); }
+.menu-panel button.danger:hover { background: var(--out-hd); color: var(--out-ink); }
+.menu-panel button:disabled { color: var(--ink-3); opacity: .5; cursor: default; }
+.menu-panel button:disabled:hover { background: transparent; color: var(--ink-3); }
 .menu-sep { height: 1px; background: var(--line); margin: 6px 4px; }
 
 /* ============================================================
@@ -583,6 +585,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
           <div class="menu-sep"></div>
           <button type="button" id="act-fill-year">Recopier janvier sur l'année</button>
           <button type="button" class="danger" id="act-reset-year">Vider l'année</button>
+          <button type="button" class="danger" id="act-delete-year">Supprimer l'année</button>
         </div>
       </details>
       <input type="file" id="file-input" accept="application/json,.json" hidden>
@@ -1560,6 +1563,15 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     });
     host.appendChild(add);
     $("ledger-year").textContent = state.current;
+
+    // Naming both actions after the year makes the difference between
+    // "empty it" and "remove it" unmissable.
+    $("act-reset-year").textContent = "Vider l'année " + state.current;
+    var del = $("act-delete-year");
+    var onlyYear = sortedYears().length < 2;
+    del.textContent = "Supprimer l'année " + state.current;
+    del.disabled = onlyYear;
+    del.title = onlyYear ? "Le tableau doit garder au moins une année" : "";
   }
 
   /* ==========================================================
@@ -1695,11 +1707,33 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
 
     $("act-reset-year").addEventListener("click", function () {
       closeMenu();
-      if (window.confirm("Vider tous les montants de " + state.current + " ?")) {
+      if (window.confirm("Vider tous les montants de " + state.current + " ? L'année reste dans le tableau.")) {
         state.years[state.current] = emptyYear();
         save();
         render();
       }
+    });
+
+    $("act-delete-year").addEventListener("click", function () {
+      closeMenu();
+      var years = sortedYears();
+      if (years.length < 2) return;
+
+      var gone = state.current;
+      var hasData = state.years[gone].rows.some(function (r) {
+        return EDIT_KEYS.some(function (k) { return r[k] != null; });
+      });
+      if (!window.confirm(hasData
+        ? "Supprimer l'année " + gone + " et toutes ses saisies ? Cette action est définitive."
+        : "Supprimer l'année " + gone + " ?")) return;
+
+      var idx = years.indexOf(gone);
+      delete state.years[gone];
+      // Fall back on the neighbour that took its place, or the new last year.
+      var left = sortedYears();
+      state.current = left[Math.min(idx, left.length - 1)];
+      save();
+      render();
     });
 
     ["livret", "pea", "pel"].forEach(function (k) {

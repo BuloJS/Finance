@@ -41,6 +41,16 @@ de décembre.
   chaque enveloppe avant la première année. Les années suivantes reprennent
   automatiquement le solde de décembre.
 
+### Années
+
+Le `+` à droite des onglets ajoute l'année suivante. Le menu **Fichier** distingue
+deux actions, chacune nommée d'après l'année affichée :
+
+- **Vider l'année 2027** — efface les montants, l'année reste dans le tableau ;
+- **Supprimer l'année 2027** — retire l'année entièrement (désactivé s'il n'en reste
+  qu'une). Les cumuls des années suivantes se ré-enchaînent aussitôt sur l'année qui
+  précède désormais.
+
 ### Raccourcis
 
 | Touche | Effet |
