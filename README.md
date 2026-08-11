@@ -11,36 +11,34 @@ Ouvrez-le dans un navigateur (double-clic) et c'est prêt.
 
 | Saisi | Calculé |
 |---|---|
-| **Base** (ce que vous décidez de mettre de côté) | Reste |
+| **Base** (ce que vous décidez de mettre de côté) | Investissement |
 | Livret, PEA, PEL (versements du mois) | Invest bonus potentiel |
 | Rentrée, Achats (mouvements exceptionnels) | Cumul Livret / PEA / PEL |
 | Taux Livret / PEA / PEL (annuels) | Total, Somme par an |
 
 ```
-Reste = Base − (Livret + PEA + PEL)
 Invest bonus potentiel = Rentrée − Achats
+Investissement = (Livret + PEA + PEL) + Invest bonus potentiel
 Cumul = Cumul(m−1) × (1 + taux/12) + versement(m)
 Total = Cumul Livret + Cumul PEA + Cumul PEL
 Somme par an = cumul des versements depuis janvier
 ```
 
-**Deux poches qui ne se recoupent pas.** Le *Reste* vient du prévu : vous décidez
-1 000 € pour le mois, vous placez 400 sur le Livret, 300 sur le PEA et 100 sur le
-PEL, il reste 200 € à placer.
+**Investissement, c'est ce que le mois a réellement mis de côté**, bonus compris.
+Vert au-dessus de zéro, rouge en dessous : sous zéro, les achats exceptionnels ont
+mangé plus que ce qui a été investi. Vous investissez 450 € et vos achats dépassent
+vos rentrées de 600 € → l'Investissement du mois est de −150 €, en rouge.
 
-L'*Invest bonus potentiel* vient des extras : une rentrée exceptionnelle moins les
-achats du mois, c'est-à-dire ce que le mois libère **en plus** de la base. Négatif,
-les achats ont dépassé les rentrées exceptionnelles.
+L'*Invest bonus potentiel* est ce que les mouvements exceptionnels libèrent, ou
+vous coûtent, en plus de la base. Il alimente directement la colonne
+Investissement.
 
-**Un Reste négatif est normal** — si vous placez plus que la base, ce sont vos
-rentrées du mois qui le financent. Il ne s'affiche donc pas comme une alerte. Le
-rouge est réservé au seul cas qui le mérite : les versements dépassent la base
-**et** le bonus, autrement dit tout ce dont vous disposiez ce mois-là.
+La **Base** ne rentre pas dans ce calcul : c'est l'objectif que vous vous fixez,
+suivi par la jauge « Base d'épargne » et par le repère posé sur chaque mois du
+graphique d'effort. Une Base laissée vide vaut zéro.
 
-Un Reste de zéro s'affiche `0 €`, pas `—` : la base atteinte au centime est un
-résultat, pas une case vide. Le tiret ne reste que sur les mois sans aucune saisie.
-
-Une Base laissée vide vaut zéro.
+Un résultat de zéro s'affiche `0 €`, pas `—` : c'est un résultat, pas une case
+vide. Le tiret ne reste que sur les mois sans aucune saisie.
 
 Les intérêts courent sur l'encours du mois précédent, le taux saisi étant annuel.
 La ligne **Année** en bas du tableau totalise les versements et reprend les cumuls

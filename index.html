@@ -625,10 +625,11 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
           <dl>
             <dt>Base <span style="font-weight:400;color:var(--ink-3)">(saisie)</span></dt>
             <dd>Ce que vous décidez de mettre de côté ce mois-ci. <code>Ctrl</code>+<code>D</code> la recopie sur toute l'année.</dd>
-            <dt>Reste</dt>
-            <dd><code>Base − (Livret + PEA + PEL)</code> — ce qu'il vous reste de la somme mise de côté. Passer sous zéro est normal : si vous placez plus que la base, ce sont vos rentrées du mois qui le financent. Le Reste ne s'affiche en rouge que si les versements dépassent la base <em>et</em> le bonus, c'est-à-dire tout ce dont vous disposiez ce mois-là.</dd>
             <dt>Invest bonus potentiel</dt>
-            <dd><code>Rentrée − Achats</code> — ce que vos mouvements exceptionnels du mois libèrent <em>en plus</em> de la base. Les deux colonnes ne se recoupent pas : le Reste vient du prévu, le bonus vient des extras.</dd>
+            <dd><code>Rentrée − Achats</code> — ce que vos mouvements exceptionnels du mois libèrent, ou vous coûtent, <em>en plus</em> de la base.</dd>
+            <dt>Investissement</dt>
+            <dd><code>(Livret + PEA + PEL) + Invest bonus potentiel</code> — ce que le mois a réellement mis de côté, une fois le bonus pris en compte. Vert au-dessus de zéro, rouge en dessous : sous zéro, vos achats exceptionnels ont mangé plus que ce que vous avez investi.</dd>
+            <dd style="margin-top:6px;color:var(--ink-3)">La <strong>Base</strong> ne rentre pas dans ce calcul : elle sert d'objectif, suivi par la jauge « Base d'épargne » et par le repère sur le graphique mensuel.</dd>
             <dt>Cumul (par enveloppe)</dt>
             <dd><code>cumul = cumul<sub>m-1</sub> × (1 + taux/12) + versement<sub>m</sub></code> — les intérêts courent sur l'encours du mois précédent, le taux saisi étant annuel.</dd>
             <dt>Total</dt>
@@ -702,7 +703,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     { key: "livret",  label: "Livret",                  group: "Versements",  kind: "money", edit: true },
     { key: "pea",     label: "PEA",                     group: "Versements",  kind: "money", edit: true },
     { key: "pel",     label: "PEL",                     group: "Versements",  kind: "money", edit: true },
-    { key: "reste",   label: "Reste",                   group: "Trésorerie",  kind: "money", calc: true, signed: true },
+    { key: "invest",  label: "Investissement",          group: "Trésorerie",  kind: "money", calc: true, signed: true },
     { key: "rentree", label: "Rentrée",                 group: "Trésorerie",  kind: "money", edit: true, tone: "in" },
     { key: "achats",  label: "Achats",                  group: "Trésorerie",  kind: "money", edit: true, tone: "out" },
     { key: "bonus",   label: "Invest bonus potentiel",  group: "Trésorerie",  kind: "money", calc: true, signed: true, tone: "bonus" },
@@ -865,7 +866,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     };
     var out = [];
     var runningDeposits = 0;
-    var sum = { base: 0, versements: 0, rentree: 0, achats: 0, bonus: 0, reste: 0, monthsSaved: 0 };
+    var sum = { base: 0, versements: 0, rentree: 0, achats: 0, bonus: 0, invest: 0, monthsSaved: 0 };
 
     for (var m = 0; m < 12; m++) {
       var r = rows[m];
@@ -895,14 +896,11 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
       line.versements = depositsTotal;
       line.rentree = rentree;
       line.achats = achats;
-      // Two separate pots, deliberately not overlapping: Reste is what is left of
-      // the amount decided up front, Bonus is what the month's extra movements
-      // freed up on top of it.
-      line.reste = base - depositsTotal;
+      // What the month really put aside: the three envelopes, adjusted by the
+      // exceptional movements. Below zero, the extra purchases ate more than
+      // was invested.
       line.bonus = rentree - achats;
-      // Everything the month made available, once the envelopes are funded.
-      // Negative means the versements went past the base *and* the extras.
-      line.dispo = line.reste + line.bonus;
+      line.invest = depositsTotal + line.bonus;
       line.total = line.cumuls.livret + line.cumuls.pea + line.cumuls.pel;
       line.annee = runningDeposits;
 
@@ -911,7 +909,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
       sum.rentree += rentree;
       sum.achats += achats;
       sum.bonus += line.bonus;
-      sum.reste += line.reste;
+      sum.invest += line.invest;
       if (depositsTotal > 0) sum.monthsSaved++;
 
       out.push(line);
@@ -1079,11 +1077,9 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
 
       rowEls[m].classList.toggle("is-empty", !line.filled);
 
-      // On a month that has entries, a Reste of exactly zero is a real result —
-      // the plan was met to the euro — so it prints 0 € rather than a dash.
-      // Going below zero is expected: the extra income funds it. Only going
-      // below what the base AND the extras together allow is worth flagging.
-      paintValue(rowCells.reste, line.reste, { dashIfZero: !line.filled, alert: line.dispo < -0.005 });
+      // On a month that has entries, an exact zero is a real result, so it
+      // prints 0 € rather than a dash.
+      paintValue(rowCells.invest, line.invest, { signed: true, dashIfZero: !line.filled });
       paintValue(rowCells.bonus, line.bonus, { signed: true, dashIfZero: !line.filled });
       paintValue(rowCells.cLivret, line.cumuls.livret, { dashIfZero: true });
       paintValue(rowCells.cPea, line.cumuls.pea, { dashIfZero: true });
@@ -1097,8 +1093,8 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     footEls.livret.textContent = fmtMoney(round2(sumKey("livret")));
     footEls.pea.textContent = fmtMoney(round2(sumKey("pea")));
     footEls.pel.textContent = fmtMoney(round2(sumKey("pel")));
-    footEls.reste.textContent = fmtMoney(round2(s.reste));
-    footEls.reste.style.color = s.reste + s.bonus < -0.005 ? "var(--neg)" : "";
+    footEls.invest.textContent = fmtMoney(round2(s.invest));
+    footEls.invest.style.color = s.invest < -0.005 ? "var(--neg)" : (s.invest > 0.005 ? "var(--pos)" : "");
     footEls.rentree.textContent = fmtMoney(round2(s.rentree));
     footEls.achats.textContent = fmtMoney(round2(s.achats));
     footEls.bonus.textContent = fmtMoney(round2(s.bonus));
@@ -1243,16 +1239,12 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     t.insertBefore(meter, t.querySelector(".foot"));
     host.appendChild(t);
 
-    var dispo = s.reste + s.bonus;
     host.appendChild(tile({
-      label: "Reste de la base",
-      value: fmtCompact(s.reste),
-      tone: dispo < -0.005 ? "neg" : "",
-      foot: s.reste < -0.005
-        ? (dispo < -0.005
-            ? "Au-delà de la base <em>et</em> des rentrées"
-            : "Placé au-delà de la base, financé par les rentrées")
-        : (s.reste > 0.005 ? "Prévu mais pas encore placé" : "Base atteinte au centime")
+      label: "Investissement",
+      value: (s.invest > 0 ? "+" : "") + fmtCompact(s.invest),
+      tone: s.invest < -0.005 ? "neg" : (s.invest > 0.005 ? "pos" : ""),
+      foot: "Versé <strong>" + fmtCompact(s.versements) + "</strong> · Bonus <strong>"
+        + (s.bonus > 0 ? "+" : "") + fmtCompact(s.bonus) + "</strong>"
     }));
 
     host.appendChild(tile({
@@ -1703,7 +1695,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     for (var m = 0; m < 12; m++) {
       var r = state.years[state.current].rows[m], l = view.lines[m];
       lines.push([
-        MONTHS[m], fr(r.base || 0), fr(r.livret || 0), fr(r.pea || 0), fr(r.pel || 0), fr(l.reste),
+        MONTHS[m], fr(r.base || 0), fr(r.livret || 0), fr(r.pea || 0), fr(r.pel || 0), fr(l.invest),
         fr(r.rentree || 0), fr(r.achats || 0), fr(l.bonus),
         fr(l.rates.livret), fr(l.rates.pea), fr(l.rates.pel),
         fr(l.cumuls.livret), fr(l.cumuls.pea), fr(l.cumuls.pel),
