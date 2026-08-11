@@ -12,27 +12,27 @@ Ouvrez-le dans un navigateur (double-clic) et c'est prêt.
 | Saisi | Calculé |
 |---|---|
 | **Base** (ce que vous décidez de mettre de côté) | Reste |
-| Livret, PEA, PEL (versements du mois) | Cumul Livret / PEA / PEL |
-| Rentrée, Achats (mouvements *en plus* de la base) | Total |
-| Invest bonus potentiel | Somme par an |
-| Taux Livret / PEA / PEL (annuels) | |
+| Livret, PEA, PEL (versements du mois) | Invest bonus potentiel |
+| Rentrée, Achats (mouvements exceptionnels) | Cumul Livret / PEA / PEL |
+| Taux Livret / PEA / PEL (annuels) | Total, Somme par an |
 
 ```
-Reste  = Base + Rentrée − Achats − (Livret + PEA + PEL)
-Cumul  = Cumul(m−1) × (1 + taux/12) + versement(m)
-Total  = Cumul Livret + Cumul PEA + Cumul PEL
+Reste = Base − (Livret + PEA + PEL)
+Invest bonus potentiel = Rentrée − Achats
+Cumul = Cumul(m−1) × (1 + taux/12) + versement(m)
+Total = Cumul Livret + Cumul PEA + Cumul PEL
 Somme par an = cumul des versements depuis janvier
 ```
 
-**Le Reste, c'est ce qu'il vous reste de la somme mise de côté.** Vous décidez
+**Deux poches qui ne se recoupent pas.** Le *Reste* vient du prévu : vous décidez
 1 000 € pour le mois, vous placez 400 sur le Livret, 300 sur le PEA et 100 sur le
-PEL : il reste 200 € à placer. Rentrée et Achats viennent *en plus* de cette base —
-une rentrée exceptionnelle augmente ce que vous pouvez encore placer, un achat le
-réduit. Un Reste négatif signifie que vous avez placé plus que ce que vous aviez
-prévu.
+PEL, il reste 200 € à placer. Négatif, vous avez placé plus que prévu.
 
-Une Base laissée vide vaut zéro : le Reste redevient alors simplement
-`Rentrée − Achats − versements`.
+L'*Invest bonus potentiel* vient des extras : une rentrée exceptionnelle moins les
+achats du mois, c'est-à-dire ce que le mois libère **en plus** de la base. Négatif,
+les achats ont dépassé les rentrées exceptionnelles.
+
+Une Base laissée vide vaut zéro.
 
 Les intérêts courent sur l'encours du mois précédent, le taux saisi étant annuel.
 La ligne **Année** en bas du tableau totalise les versements et reprend les cumuls
