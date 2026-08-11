@@ -78,6 +78,27 @@ function normalize(data) {
   return null;
 }
 
+/**
+ * Un état contient-il quelque chose ? Sert de garde-fou : un tableau vide ne
+ * doit jamais remplacer un tableau rempli, même s'il porte un horodatage
+ * plus récent. C'est exactement ce qui a fait disparaître des données —
+ * un état par défaut, bien formé mais vide, a écrasé la sauvegarde.
+ */
+function hasContent(state) {
+  if (!state?.years) return false;
+
+  const opening = state.opening || {};
+  if (["livret", "pea", "pel"].some((k) => Number(opening[k]) > 0)) return true;
+
+  return Object.values(state.years).some((year) =>
+    (year?.rows || []).some((row) =>
+      ["base", "rentree", "achats", "livret", "pea", "pel"].some(
+        (k) => row?.[k] !== null && row?.[k] !== undefined && row?.[k] !== ""
+      )
+    )
+  );
+}
+
 /** Données enregistrées côté serveur, ou null si le compte n'en a pas encore. */
 async function fetchRemote(session) {
   const url = `${REST}?app=eq.${encodeURIComponent(APP_NAME)}&select=data,updated_at`;
@@ -147,7 +168,12 @@ if (session?.access_token && session.user?.id && app) {
       const remote = await fetchRemote(session);
       const local = app.getLocalStamp();
 
-      if (remote && remote.state === null) {
+      if (remote && remote.state && !hasContent(remote.state) && hasContent(app.getState())) {
+        // Le serveur est vide alors que ce PC a des données : on ne les
+        // remplace pas, on remet plutôt le serveur à jour.
+        schedulePush(app.getState(), Date.now());
+        app.onSyncState("pushed-over-empty");
+      } else if (remote && remote.state === null) {
         // Le serveur contient quelque chose d'illisible pour l'application.
         // On n'y touche pas et on garde les données locales : écraser l'un
         // ou l'autre ferait perdre des données pour de bon.

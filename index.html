@@ -1868,6 +1868,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     onSyncState: function (kind, detail) {
       if (kind === "ok") setPill("ok", "Synchronisé");
       else if (kind === "pulled") setPill("ok", "Récupéré depuis le serveur");
+      else if (kind === "pushed-over-empty") setPill("ok", "Serveur vide — données de ce PC renvoyées");
       else setPill("off", "Hors ligne — sauvegarde locale" + (detail ? " (" + detail + ")" : ""));
     }
   };
