@@ -26,11 +26,19 @@ Somme par an = cumul des versements depuis janvier
 
 **Deux poches qui ne se recoupent pas.** Le *Reste* vient du prévu : vous décidez
 1 000 € pour le mois, vous placez 400 sur le Livret, 300 sur le PEA et 100 sur le
-PEL, il reste 200 € à placer. Négatif, vous avez placé plus que prévu.
+PEL, il reste 200 € à placer.
 
 L'*Invest bonus potentiel* vient des extras : une rentrée exceptionnelle moins les
 achats du mois, c'est-à-dire ce que le mois libère **en plus** de la base. Négatif,
 les achats ont dépassé les rentrées exceptionnelles.
+
+**Un Reste négatif est normal** — si vous placez plus que la base, ce sont vos
+rentrées du mois qui le financent. Il ne s'affiche donc pas comme une alerte. Le
+rouge est réservé au seul cas qui le mérite : les versements dépassent la base
+**et** le bonus, autrement dit tout ce dont vous disposiez ce mois-là.
+
+Un Reste de zéro s'affiche `0 €`, pas `—` : la base atteinte au centime est un
+résultat, pas une case vide. Le tiret ne reste que sur les mois sans aucune saisie.
 
 Une Base laissée vide vaut zéro.
 

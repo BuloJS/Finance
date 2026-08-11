@@ -626,7 +626,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
             <dt>Base <span style="font-weight:400;color:var(--ink-3)">(saisie)</span></dt>
             <dd>Ce que vous décidez de mettre de côté ce mois-ci. <code>Ctrl</code>+<code>D</code> la recopie sur toute l'année.</dd>
             <dt>Reste</dt>
-            <dd><code>Base − (Livret + PEA + PEL)</code> — ce qu'il vous reste de la somme mise de côté. Négatif, vous avez placé plus que prévu.</dd>
+            <dd><code>Base − (Livret + PEA + PEL)</code> — ce qu'il vous reste de la somme mise de côté. Passer sous zéro est normal : si vous placez plus que la base, ce sont vos rentrées du mois qui le financent. Le Reste ne s'affiche en rouge que si les versements dépassent la base <em>et</em> le bonus, c'est-à-dire tout ce dont vous disposiez ce mois-là.</dd>
             <dt>Invest bonus potentiel</dt>
             <dd><code>Rentrée − Achats</code> — ce que vos mouvements exceptionnels du mois libèrent <em>en plus</em> de la base. Les deux colonnes ne se recoupent pas : le Reste vient du prévu, le bonus vient des extras.</dd>
             <dt>Cumul (par enveloppe)</dt>
@@ -900,6 +900,9 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
       // freed up on top of it.
       line.reste = base - depositsTotal;
       line.bonus = rentree - achats;
+      // Everything the month made available, once the envelopes are funded.
+      // Negative means the versements went past the base *and* the extras.
+      line.dispo = line.reste + line.bonus;
       line.total = line.cumuls.livret + line.cumuls.pea + line.cumuls.pel;
       line.annee = runningDeposits;
 
@@ -1039,9 +1042,14 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
 
   function paintValue(span, value, opts) {
     opts = opts || {};
-    span.className = "calc" + (Math.abs(value) < 0.005 ? " zero" : "");
-    span.textContent = Math.abs(value) < 0.005 && opts.dashIfZero ? "—" : fmtMoney(round2(value));
-    if (opts.signed) {
+    var isZero = Math.abs(value) < 0.005;
+    var dashed = isZero && opts.dashIfZero;
+    // Only a dash is greyed out. A real zero is a result, not an absence.
+    span.className = "calc" + (dashed ? " zero" : "");
+    span.textContent = dashed ? "—" : fmtMoney(round2(value));
+    if (opts.alert !== undefined) {
+      span.style.color = opts.alert ? "var(--neg)" : "";
+    } else if (opts.signed) {
       span.style.color = value < -0.005 ? "var(--neg)" : (value > 0.005 ? "var(--pos)" : "");
     }
   }
@@ -1071,8 +1079,12 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
 
       rowEls[m].classList.toggle("is-empty", !line.filled);
 
-      paintValue(rowCells.reste, line.reste, { signed: true, dashIfZero: true });
-      paintValue(rowCells.bonus, line.bonus, { signed: true, dashIfZero: true });
+      // On a month that has entries, a Reste of exactly zero is a real result —
+      // the plan was met to the euro — so it prints 0 € rather than a dash.
+      // Going below zero is expected: the extra income funds it. Only going
+      // below what the base AND the extras together allow is worth flagging.
+      paintValue(rowCells.reste, line.reste, { dashIfZero: !line.filled, alert: line.dispo < -0.005 });
+      paintValue(rowCells.bonus, line.bonus, { signed: true, dashIfZero: !line.filled });
       paintValue(rowCells.cLivret, line.cumuls.livret, { dashIfZero: true });
       paintValue(rowCells.cPea, line.cumuls.pea, { dashIfZero: true });
       paintValue(rowCells.cPel, line.cumuls.pel, { dashIfZero: true });
@@ -1086,7 +1098,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     footEls.pea.textContent = fmtMoney(round2(sumKey("pea")));
     footEls.pel.textContent = fmtMoney(round2(sumKey("pel")));
     footEls.reste.textContent = fmtMoney(round2(s.reste));
-    footEls.reste.style.color = s.reste < -0.005 ? "var(--neg)" : (s.reste > 0.005 ? "var(--pos)" : "");
+    footEls.reste.style.color = s.reste + s.bonus < -0.005 ? "var(--neg)" : "";
     footEls.rentree.textContent = fmtMoney(round2(s.rentree));
     footEls.achats.textContent = fmtMoney(round2(s.achats));
     footEls.bonus.textContent = fmtMoney(round2(s.bonus));
@@ -1231,13 +1243,16 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     t.insertBefore(meter, t.querySelector(".foot"));
     host.appendChild(t);
 
+    var dispo = s.reste + s.bonus;
     host.appendChild(tile({
       label: "Reste de la base",
       value: fmtCompact(s.reste),
-      tone: s.reste < 0 ? "neg" : (s.reste > 0 ? "pos" : ""),
-      foot: s.reste < 0
-        ? "Vous avez placé plus que prévu"
-        : "Prévu mais pas encore placé"
+      tone: dispo < -0.005 ? "neg" : "",
+      foot: s.reste < -0.005
+        ? (dispo < -0.005
+            ? "Au-delà de la base <em>et</em> des rentrées"
+            : "Placé au-delà de la base, financé par les rentrées")
+        : (s.reste > 0.005 ? "Prévu mais pas encore placé" : "Base atteinte au centime")
     }));
 
     host.appendChild(tile({
