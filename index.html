@@ -1,0 +1,1753 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compta — Épargne mensuelle</title>
+</head>
+<body>
+
+<style>
+/* ============================================================
+   TOKENS
+   Neutrals biased cool/indigo, accent indigo (kept clear of the
+   green / red / amber the ledger already uses for Rentrée,
+   Achats and Invest bonus).
+   ============================================================ */
+:root {
+  color-scheme: light;
+
+  --bg:            #f1f3f7;
+  --surface:       #ffffff;
+  --surface-2:     #f7f8fb;
+  --surface-3:     #eceef4;
+
+  --ink:           #14161f;
+  --ink-2:         #565b6b;
+  --ink-3:         #878d9e;
+
+  --line:          #e3e6ee;
+  --line-strong:   #ccd1de;
+  --calc-wash:     rgba(20,22,31,.030);
+
+  --accent:        #4b45d6;
+  --accent-ink:    #3a34b8;
+  --accent-soft:   #ecebfe;
+  --accent-line:   #c9c6f7;
+
+  --pos:           #0a6b0a;
+  --neg:           #b32b2b;
+
+  --in-bg:         rgba(12,163,12,.055);
+  --in-hd:         rgba(12,163,12,.15);
+  --in-ink:        #0a6b0a;
+  --out-bg:        rgba(208,59,59,.05);
+  --out-hd:        rgba(208,59,59,.14);
+  --out-ink:       #a92e2e;
+  --bonus-bg:      rgba(250,178,25,.10);
+  --bonus-hd:      rgba(250,178,25,.30);
+  --bonus-ink:     #8a5a00;
+
+  --s1:            #2a78d6;
+  --s2:            #eb6834;
+  --s3:            #1baf7a;
+  --grid:          #e6e8ef;
+  --axis:          #ccd1de;
+  --chart-surface: #ffffff;
+
+  --shadow:        0 1px 2px rgba(20,22,31,.05), 0 8px 24px -12px rgba(20,22,31,.18);
+  --shadow-sticky: 8px 0 12px -10px rgba(20,22,31,.30);
+
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --row-h: 34px;
+  --hd-1: 28px;
+  --hd-2: 38px;
+  --radius: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --bg:            #0d0e13;
+    --surface:       #16181f;
+    --surface-2:     #1b1d26;
+    --surface-3:     #232630;
+
+    --ink:           #f0f1f6;
+    --ink-2:         #a4aaba;
+    --ink-3:         #757b8c;
+
+    --line:          #262a34;
+    --line-strong:   #363b48;
+    --calc-wash:     rgba(255,255,255,.035);
+
+    --accent:        #8f8bfb;
+    --accent-ink:    #a9a6fc;
+    --accent-soft:   #211f45;
+    --accent-line:   #3a3672;
+
+    --pos:           #3fbf3f;
+    --neg:           #f08787;
+
+    --in-bg:         rgba(12,163,12,.075);
+    --in-hd:         rgba(12,163,12,.20);
+    --in-ink:        #5cc35c;
+    --out-bg:        rgba(208,59,59,.085);
+    --out-hd:        rgba(208,59,59,.22);
+    --out-ink:       #ef8b8b;
+    --bonus-bg:      rgba(250,178,25,.07);
+    --bonus-hd:      rgba(250,178,25,.20);
+    --bonus-ink:     #e2ac52;
+
+    --s1:            #3987e5;
+    --s2:            #d95926;
+    --s3:            #199e70;
+    --grid:          #242833;
+    --axis:          #363b48;
+    --chart-surface: #16181f;
+
+    --shadow:        0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.8);
+    --shadow-sticky: 8px 0 12px -10px rgba(0,0,0,.6);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg:            #0d0e13;
+  --surface:       #16181f;
+  --surface-2:     #1b1d26;
+  --surface-3:     #232630;
+
+  --ink:           #f0f1f6;
+  --ink-2:         #a4aaba;
+  --ink-3:         #757b8c;
+
+  --line:          #262a34;
+  --line-strong:   #363b48;
+  --calc-wash:     rgba(255,255,255,.035);
+
+  --accent:        #8f8bfb;
+  --accent-ink:    #a9a6fc;
+  --accent-soft:   #211f45;
+  --accent-line:   #3a3672;
+
+  --pos:           #3fbf3f;
+  --neg:           #f08787;
+
+  --in-bg:         rgba(12,163,12,.075);
+  --in-hd:         rgba(12,163,12,.20);
+  --in-ink:        #5cc35c;
+  --out-bg:        rgba(208,59,59,.085);
+  --out-hd:        rgba(208,59,59,.22);
+  --out-ink:       #ef8b8b;
+  --bonus-bg:      rgba(250,178,25,.07);
+  --bonus-hd:      rgba(250,178,25,.20);
+  --bonus-ink:     #e2ac52;
+
+  --s1:            #3987e5;
+  --s2:            #d95926;
+  --s3:            #199e70;
+  --grid:          #242833;
+  --axis:          #363b48;
+  --chart-surface: #16181f;
+
+  --shadow:        0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.8);
+  --shadow-sticky: 8px 0 12px -10px rgba(0,0,0,.6);
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { margin: 0; text-wrap: balance; font-weight: 600; letter-spacing: -0.015em; }
+
+button, input, select { font: inherit; color: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.shell {
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: 0 20px 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ============================================================
+   TOP BAR
+   ============================================================ */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+}
+
+.topbar-inner {
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; }
+.brand h1 { font-size: 17px; }
+.brand .sub { color: var(--ink-3); font-size: 12px; }
+
+/* Year switcher — a spine of tabs, the ledger's primary axis */
+.years {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface-3);
+  border-radius: 999px;
+  padding: 3px;
+}
+.year-tab {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  letter-spacing: .04em;
+  padding: 5px 13px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.year-tab:hover { color: var(--ink); }
+.year-tab[aria-current="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  font-weight: 600;
+}
+.year-add {
+  border: 0; background: transparent; color: var(--ink-3);
+  width: 28px; height: 28px; border-radius: 999px; cursor: pointer; font-size: 16px; line-height: 1;
+}
+.year-add:hover { background: var(--surface); color: var(--ink); }
+
+.tools { display: flex; align-items: center; gap: 8px; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 11px; letter-spacing: .03em;
+  color: var(--ink-3);
+  padding: 5px 10px; border-radius: 999px;
+  background: var(--surface-3);
+  white-space: nowrap;
+}
+.pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pos); }
+.pill[data-state="dirty"] .dot { background: var(--bonus-ink); }
+.pill[data-state="off"] .dot { background: var(--neg); }
+
+.btn {
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink-2);
+  border-radius: 8px;
+  padding: 6px 11px;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: border-color .12s, color .12s, background .12s;
+  white-space: nowrap;
+}
+.btn:hover { color: var(--ink); border-color: var(--ink-3); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
+.btn-primary:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: #fff; }
+
+.menu { position: relative; }
+.menu > summary {
+  list-style: none; cursor: pointer;
+  border: 1px solid var(--line-strong); background: var(--surface);
+  border-radius: 8px; padding: 6px 11px; font-size: 12.5px; color: var(--ink-2);
+}
+.menu > summary::-webkit-details-marker { display: none; }
+.menu[open] > summary { color: var(--ink); border-color: var(--ink-3); }
+.menu-panel {
+  position: absolute; right: 0; top: calc(100% + 6px);
+  min-width: 232px; z-index: 60;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 6px;
+  display: flex; flex-direction: column;
+}
+.menu-panel button {
+  text-align: left; border: 0; background: transparent; color: var(--ink-2);
+  padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 13px;
+}
+.menu-panel button:hover { background: var(--surface-2); color: var(--ink); }
+.menu-panel button.danger:hover { background: var(--out-bg); color: var(--out-ink); }
+.menu-sep { height: 1px; background: var(--line); margin: 6px 4px; }
+
+/* ============================================================
+   SUMMARY TILES
+   ============================================================ */
+.summary {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr 1.15fr;
+  gap: 12px;
+}
+@media (max-width: 1080px) { .summary { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px)  { .summary { grid-template-columns: 1fr; } }
+
+.tile {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.tile .label { font-size: 12px; color: var(--ink-2); }
+.tile .value {
+  font-family: var(--mono);
+  font-size: 23px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.tile.hero { background: linear-gradient(180deg, var(--accent-soft), var(--surface) 78%); border-color: var(--accent-line); }
+.tile.hero .value { font-size: 48px; letter-spacing: -0.035em; }
+.tile.hero .label { color: var(--accent-ink); font-weight: 500; }
+.tile .foot { font-size: 11.5px; color: var(--ink-3); margin-top: auto; padding-top: 6px; }
+.tile .foot strong { font-family: var(--mono); font-weight: 600; color: var(--ink-2); }
+.val-pos { color: var(--pos); }
+.val-neg { color: var(--neg); }
+
+/* Savings-rate meter: fill + lighter track of the same ramp */
+.meter { height: 6px; border-radius: 999px; background: var(--accent-soft); overflow: hidden; margin-top: 8px; }
+.meter > span { display: block; height: 100%; border-radius: 999px; background: var(--accent); transition: width .3s ease; }
+@media (prefers-reduced-motion: reduce) { .meter > span { transition: none; } }
+
+/* ============================================================
+   LEDGER
+   ============================================================ */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.panel-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.panel-head h2 { font-size: 14px; }
+.panel-head .hint { margin-left: auto; font-size: 11.5px; color: var(--ink-3); }
+/* Keyboard shortcuts mean nothing on a touch screen. */
+@media (max-width: 780px) { .hint-keys { display: none; } }
+kbd {
+  font-family: var(--mono); font-size: 10.5px;
+  border: 1px solid var(--line-strong); border-bottom-width: 2px;
+  border-radius: 5px; padding: 1px 5px; color: var(--ink-2); background: var(--surface-2);
+}
+
+.table-scroll { overflow: auto; max-height: 72vh; }
+
+table.ledger { border-collapse: separate; border-spacing: 0; width: 100%; }
+
+.ledger th, .ledger td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+.ledger th:last-child, .ledger td:last-child { border-right: 0; }
+
+/* Group header row */
+.ledger thead tr.groups th {
+  position: sticky; top: 0; z-index: 5;
+  height: var(--hd-1);
+  background-color: var(--surface-2);
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-3); font-weight: 500;
+  text-align: center; padding: 0 10px;
+}
+/* Label header row */
+.ledger thead tr.labels th {
+  position: sticky; top: var(--hd-1); z-index: 5;
+  height: var(--hd-2);
+  background-color: var(--surface);
+  font-size: 11.5px; font-weight: 600; color: var(--ink-2);
+  padding: 0 10px;
+}
+.ledger thead tr.labels th::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: var(--line-strong);
+}
+
+/* Sticky month column */
+.ledger .c-mois {
+  position: sticky; left: 0; z-index: 6;
+  text-align: left; width: 108px; min-width: 108px;
+  background-color: var(--surface);
+}
+.ledger thead tr.groups th.c-mois,
+.ledger thead tr.labels th.c-mois { z-index: 9; }
+.table-scroll[data-scrolled="true"] .c-mois { box-shadow: var(--shadow-sticky); }
+.ledger tbody .c-mois { font-size: 12.5px; color: var(--ink-2); padding: 0 12px; }
+.ledger tbody tr.is-now .c-mois { color: var(--ink); font-weight: 600; }
+.ledger tbody tr.is-now .c-mois::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--accent);
+}
+.ledger tbody td { position: relative; height: var(--row-h); }
+/* background-COLOR only — the column tints and the calc wash ride on background-image
+   and would be wiped by the shorthand. */
+.ledger tbody tr:nth-child(even) td { background-color: var(--surface-2); }
+.ledger tbody tr:nth-child(even) .c-mois { background-color: var(--surface-2); }
+.ledger tbody tr:hover td { background-color: var(--surface-3); }
+.ledger tbody tr:hover .c-mois { background-color: var(--surface-3); }
+/* Quarter rhythm — the boundary is real information, so it gets a rule */
+.ledger tbody tr.q-end td { border-bottom-color: var(--line-strong); }
+
+/* Cell input */
+.cell-input {
+  width: 100%; height: var(--row-h);
+  border: 0; background: transparent;
+  padding: 0 10px;
+  text-align: right;
+  font-family: var(--mono); font-size: 12.5px; font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.cell-input::placeholder { color: var(--ink-3); opacity: .55; }
+.cell-input:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.cell-input:focus {
+  outline: 2px solid var(--accent); outline-offset: -2px;
+  background: var(--surface); border-radius: 2px;
+}
+
+/* Computed cell — a translucent wash so the zebra and the row hover still read through */
+.calc {
+  display: block; padding: 0 10px; line-height: var(--row-h);
+  font-family: var(--mono); font-size: 12.5px; font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+td.is-calc { background-image: linear-gradient(var(--calc-wash), var(--calc-wash)); }
+td.is-total .calc { color: var(--ink); font-weight: 600; }
+.calc.zero { color: var(--ink-3); opacity: .5; }
+
+/* Column tones — carried over from the spreadsheet's own colour code.
+   Layered as a background-image so the zebra/hover background-color survives underneath. */
+.t-in    { background-image: linear-gradient(var(--in-bg), var(--in-bg)); }
+.t-out   { background-image: linear-gradient(var(--out-bg), var(--out-bg)); }
+.t-bonus { background-image: linear-gradient(var(--bonus-bg), var(--bonus-bg)); }
+/* The header is where the colour code actually lives — the column keeps a faint echo of it. */
+.ledger thead .t-in    { color: var(--in-ink);    background-image: linear-gradient(var(--in-hd), var(--in-hd)); }
+.ledger thead .t-out   { color: var(--out-ink);   background-image: linear-gradient(var(--out-hd), var(--out-hd)); }
+.ledger thead .t-bonus { color: var(--bonus-ink); background-image: linear-gradient(var(--bonus-hd), var(--bonus-hd)); }
+
+/* Footer total row */
+.ledger tfoot td {
+  position: sticky; bottom: 0; z-index: 6;
+  height: 40px;
+  background-color: var(--surface);
+  border-top: 1px solid var(--line-strong);
+  font-family: var(--mono); font-size: 12.5px; font-weight: 600;
+  padding: 0 10px;
+}
+.ledger tfoot td.c-mois {
+  z-index: 7;
+  font-family: var(--sans); font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-3); font-weight: 500;
+}
+
+.ledger tbody tr.is-empty .calc { opacity: .55; }
+
+/* ============================================================
+   CHARTS
+   ============================================================ */
+.charts { display: grid; grid-template-columns: 1.35fr 1fr; gap: 20px; }
+@media (max-width: 1080px) { .charts { grid-template-columns: 1fr; } }
+
+.chart-body { padding: 8px 12px 14px; position: relative; }
+.chart-body svg { display: block; width: 100%; }
+
+.legend { display: flex; gap: 16px; flex-wrap: wrap; padding: 0 16px 12px; }
+.legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-2); }
+.legend-key { width: 12px; height: 3px; border-radius: 2px; flex: none; }
+.legend-key.square { height: 10px; width: 10px; border-radius: 3px; }
+
+.tooltip {
+  position: absolute; z-index: 20; pointer-events: none;
+  background: var(--surface); border: 1px solid var(--line-strong);
+  border-radius: 9px; box-shadow: var(--shadow);
+  padding: 9px 11px; min-width: 156px;
+  opacity: 0; transition: opacity .1s;
+}
+.tooltip[data-show="true"] { opacity: 1; }
+.tooltip .tt-head { font-size: 11px; color: var(--ink-3); margin-bottom: 6px; letter-spacing: .04em; text-transform: uppercase; font-family: var(--mono); }
+.tooltip .tt-row { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-top: 3px; }
+.tooltip .tt-row .k { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.tooltip .tt-row .n { color: var(--ink-2); }
+.tooltip .tt-row .v { margin-left: auto; font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
+.tooltip .tt-total { border-top: 1px solid var(--line); margin-top: 7px; padding-top: 6px; }
+
+.empty-chart {
+  height: 232px; display: flex; align-items: center; justify-content: center;
+  color: var(--ink-3); font-size: 12.5px; text-align: center; padding: 0 24px;
+}
+
+/* ============================================================
+   SETTINGS / HELP
+   ============================================================ */
+details.info { border-top: 1px solid var(--line); }
+details.info > summary {
+  cursor: pointer; list-style: none;
+  padding: 12px 16px; font-size: 12.5px; color: var(--ink-2);
+  display: flex; align-items: center; gap: 8px;
+}
+details.info > summary::-webkit-details-marker { display: none; }
+details.info > summary::before { content: "+"; font-family: var(--mono); color: var(--ink-3); }
+details.info[open] > summary::before { content: "–"; }
+details.info > summary:hover { color: var(--ink); }
+.info-body { padding: 0 16px 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.info-body h3 { font-size: 12px; margin-bottom: 8px; color: var(--ink); }
+.info-body dl { margin: 0; font-size: 12.5px; color: var(--ink-2); }
+.info-body dt { font-weight: 600; color: var(--ink); margin-top: 8px; }
+.info-body dd { margin: 2px 0 0; }
+.info-body code { font-family: var(--mono); font-size: 11.5px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
+
+.opening { display: flex; flex-wrap: wrap; gap: 10px; }
+.opening label { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; color: var(--ink-2); }
+.opening input {
+  width: 130px; padding: 6px 9px; text-align: right;
+  font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 12.5px;
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: 7px;
+}
+
+footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; padding-top: 4px; }
+</style>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <h1>Compta</h1>
+      <span class="sub">épargne mensuelle &amp; annuelle</span>
+    </div>
+
+    <nav class="years" id="years" aria-label="Année"></nav>
+
+    <div class="tools">
+      <span class="pill" id="save-pill" data-state="ok"><span class="dot"></span><span id="save-text">Enregistré</span></span>
+      <button class="btn" id="theme-btn" type="button" title="Thème">Thème</button>
+      <details class="menu" id="menu">
+        <summary>Fichier</summary>
+        <div class="menu-panel">
+          <button type="button" id="act-export-json">Exporter (JSON)</button>
+          <button type="button" id="act-import-json">Importer (JSON)</button>
+          <button type="button" id="act-export-csv">Exporter l'année (CSV)</button>
+          <div class="menu-sep"></div>
+          <button type="button" id="act-fill-year">Recopier janvier sur l'année</button>
+          <button type="button" class="danger" id="act-reset-year">Vider l'année</button>
+        </div>
+      </details>
+      <input type="file" id="file-input" accept="application/json,.json" hidden>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+
+  <section class="summary" id="summary" aria-label="Synthèse de l'année"></section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 id="ledger-title">Relevé mensuel</h2>
+      <span class="eyebrow" id="ledger-year">—</span>
+      <span class="hint hint-keys">
+        <kbd>↑</kbd><kbd>↓</kbd> naviguer · <kbd>Entrée</kbd> ligne suivante · <kbd>Ctrl</kbd>+<kbd>D</kbd> recopier vers le bas · <kbd>Échap</kbd> annuler
+      </span>
+    </div>
+
+    <div class="table-scroll" id="table-scroll">
+      <table class="ledger" id="ledger">
+        <thead>
+          <tr class="groups" id="head-groups"></tr>
+          <tr class="labels" id="head-labels"></tr>
+        </thead>
+        <tbody id="ledger-body"></tbody>
+        <tfoot><tr id="ledger-foot"></tr></tfoot>
+      </table>
+    </div>
+
+    <details class="info">
+      <summary>Formules &amp; paramètres</summary>
+      <div class="info-body">
+        <div>
+          <h3>Colonnes calculées</h3>
+          <dl>
+            <dt>Reste</dt>
+            <dd>Rentrée − Achats − (Livret + PEA + PEL)</dd>
+            <dt>Cumul (par enveloppe)</dt>
+            <dd><code>cumul = cumul<sub>m-1</sub> × (1 + taux/12) + versement<sub>m</sub></code> — les intérêts courent sur l'encours du mois précédent, le taux saisi étant annuel.</dd>
+            <dt>Total</dt>
+            <dd>Cumul Livret + Cumul PEA + Cumul PEL — le patrimoine à la fin du mois.</dd>
+            <dt>Somme par an</dt>
+            <dd>Cumul des versements depuis janvier. La ligne de décembre donne le total versé sur l'année.</dd>
+          </dl>
+        </div>
+        <div>
+          <h3>Encours de départ</h3>
+          <p style="margin:0 0 10px;font-size:12.5px;color:var(--ink-2)">Ce que contenait déjà chaque enveloppe avant la première année du tableau. Les années suivantes reprennent automatiquement le solde de décembre.</p>
+          <div class="opening">
+            <label>Livret <input class="num" id="open-livret" inputmode="decimal"></label>
+            <label>PEA <input class="num" id="open-pea" inputmode="decimal"></label>
+            <label>PEL <input class="num" id="open-pel" inputmode="decimal"></label>
+          </div>
+        </div>
+        <div>
+          <h3>Saisie</h3>
+          <dl>
+            <dt>Taux</dt>
+            <dd>Un taux saisi vaut pour les mois suivants tant qu'un autre ne le remplace pas — inutile de le retaper chaque mois.</dd>
+            <dt>Formats acceptés</dt>
+            <dd><code>1200</code>, <code>1 200,50</code>, <code>1200.5</code>, <code>-80</code></dd>
+            <dt>Sauvegarde</dt>
+            <dd>Automatique dans ce navigateur. Exportez le JSON de temps en temps pour garder une copie.</dd>
+          </dl>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <section class="charts">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Patrimoine cumulé</h2>
+        <span class="hint" id="wealth-sub"></span>
+      </div>
+      <div class="legend" id="legend-wealth"></div>
+      <div class="chart-body" id="chart-wealth"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Effort d'épargne mensuel</h2>
+        <span class="hint" id="effort-sub"></span>
+      </div>
+      <div class="legend" id="legend-effort"></div>
+      <div class="chart-body" id="chart-effort"></div>
+    </div>
+  </section>
+
+  <footer class="credits">Vos données restent dans ce navigateur — rien n'est envoyé sur un serveur.</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ==========================================================
+     MODEL
+     ========================================================== */
+
+  var MONTHS = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+  var MONTHS_SHORT = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"];
+
+  // Column order is the user's spreadsheet order, untouched.
+  var COLS = [
+    { key: "mois",    label: "Mois",                    group: "",            kind: "month" },
+    { key: "livret",  label: "Livret",                  group: "Versements",  kind: "money", edit: true },
+    { key: "pea",     label: "PEA",                     group: "Versements",  kind: "money", edit: true },
+    { key: "pel",     label: "PEL",                     group: "Versements",  kind: "money", edit: true },
+    { key: "reste",   label: "Reste",                   group: "Trésorerie",  kind: "money", calc: true, signed: true },
+    { key: "rentree", label: "Rentrée",                 group: "Trésorerie",  kind: "money", edit: true, tone: "in" },
+    { key: "achats",  label: "Achats",                  group: "Trésorerie",  kind: "money", edit: true, tone: "out" },
+    { key: "bonus",   label: "Invest bonus potentiel",  group: "Trésorerie",  kind: "money", edit: true, tone: "bonus" },
+    { key: "tLivret", label: "Taux Livret",             group: "Taux annuel", kind: "rate",  edit: true },
+    { key: "tPea",    label: "Taux PEA",                group: "Taux annuel", kind: "rate",  edit: true },
+    { key: "tPel",    label: "Taux PEL",                group: "Taux annuel", kind: "rate",  edit: true },
+    { key: "cLivret", label: "Cumul Livret",            group: "Cumuls",      kind: "money", calc: true },
+    { key: "cPea",    label: "Cumul PEA",               group: "Cumuls",      kind: "money", calc: true },
+    { key: "cPel",    label: "Cumul PEL",               group: "Cumuls",      kind: "money", calc: true },
+    { key: "total",   label: "Total",                   group: "Bilan",       kind: "money", calc: true, strong: true },
+    { key: "annee",   label: "Somme par an",            group: "Bilan",       kind: "money", calc: true }
+  ];
+
+  var EDIT_KEYS = COLS.filter(function (c) { return c.edit; }).map(function (c) { return c.key; });
+  var COL_BY_KEY = {};
+  COLS.forEach(function (c) { COL_BY_KEY[c.key] = c; });
+  var RATE_TO_ENVELOPE = { tLivret: "livret", tPea: "pea", tPel: "pel" };
+  var STORAGE_KEY = "compta.epargne.v1";
+
+  function emptyRow() {
+    return { livret: null, pea: null, pel: null, rentree: null, achats: null, bonus: null,
+             tLivret: null, tPea: null, tPel: null };
+  }
+  function emptyYear() {
+    var rows = [], i;
+    for (i = 0; i < 12; i++) rows.push(emptyRow());
+    return { rows: rows };
+  }
+
+  function defaultState() {
+    var y = String(new Date().getFullYear());
+    var st = { version: 1, theme: "system", opening: { livret: 0, pea: 0, pel: 0 }, current: y, years: {} };
+    st.years[y] = emptyYear();
+    // Seed the current rates once so the cumuls mean something from the first keystroke.
+    st.years[y].rows[0].tLivret = 3;
+    st.years[y].rows[0].tPea = 5;
+    st.years[y].rows[0].tPel = 2;
+    return st;
+  }
+
+  /* ---------------- storage (falls back to memory) ---------------- */
+
+  var storageOK = true;
+  var memory = null;
+
+  function readStore() {
+    try {
+      var raw = window.localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { storageOK = false; return memory; }
+  }
+  function writeStore(obj) {
+    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(obj)); }
+    catch (e) { storageOK = false; memory = obj; }
+  }
+
+  function migrate(raw) {
+    if (!raw || typeof raw !== "object" || !raw.years) return defaultState();
+    var st = defaultState();
+    st.years = {};
+    Object.keys(raw.years).forEach(function (y) {
+      var year = emptyYear();
+      var src = raw.years[y] && raw.years[y].rows ? raw.years[y].rows : [];
+      for (var i = 0; i < 12; i++) {
+        var s = src[i] || {};
+        EDIT_KEYS.forEach(function (k) {
+          year.rows[i][k] = typeof s[k] === "number" && isFinite(s[k]) ? s[k] : null;
+        });
+      }
+      st.years[y] = year;
+    });
+    if (!Object.keys(st.years).length) st.years[String(new Date().getFullYear())] = emptyYear();
+    if (raw.opening) {
+      st.opening = {
+        livret: Number(raw.opening.livret) || 0,
+        pea: Number(raw.opening.pea) || 0,
+        pel: Number(raw.opening.pel) || 0
+      };
+    }
+    st.theme = raw.theme === "light" || raw.theme === "dark" ? raw.theme : "system";
+    st.current = st.years[raw.current] ? raw.current : sortedYears(st)[0];
+    return st;
+  }
+
+  var state = migrate(readStore());
+
+  function sortedYears(st) {
+    return Object.keys((st || state).years).sort();
+  }
+
+  /* ==========================================================
+     FORMATTING
+     ========================================================== */
+
+  var nfMoney = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  var nfMoney0 = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
+  var nfRate = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+  function fmtMoney(v) { return nfMoney.format(v) + " €"; }
+  function fmtMoney0(v) { return nfMoney0.format(Math.round(v)) + " €"; }
+  function fmtRate(v) { return nfRate.format(v) + " %"; }
+  // Compact only where the full figure stops being readable — a savings total
+  // rounded to "12 k€" hides exactly the euros the user came to see.
+  function fmtCompact(v) {
+    var a = Math.abs(v);
+    if (a >= 1000000) return nfRate.format(Math.round(v / 10000) / 100) + " M€";
+    if (a >= 100000) return nfRate.format(Math.round(v / 100) / 10) + " k€";
+    return fmtMoney0(v);
+  }
+  function fmtAxis(v) {
+    if (Math.abs(v) >= 1000) return nfRate.format(Math.round(v / 100) / 10) + "k";
+    return nfMoney0.format(v);
+  }
+
+  function parseNum(text) {
+    if (text == null) return null;
+    var s = String(text).replace(/[\s  ]/g, "").replace(/[€%]/g, "").replace(",", ".");
+    if (s === "" || s === "-") return null;
+    var n = Number(s);
+    return isFinite(n) ? n : null;
+  }
+
+  /* ==========================================================
+     COMPUTATION
+     ========================================================== */
+
+  var ENVELOPES = [
+    { key: "livret", cumul: "cLivret", rate: "tLivret", label: "Livret", color: "--s1" },
+    { key: "pea",    cumul: "cPea",    rate: "tPea",    label: "PEA",    color: "--s2" },
+    { key: "pel",    cumul: "cPel",    rate: "tPel",    label: "PEL",    color: "--s3" }
+  ];
+
+  // Carry-in for a year: December of the previous year in the book — balances *and*
+  // the rates in force — chained from the opening balances.
+  function carryInFor(year) {
+    var years = sortedYears();
+    var bal = {
+      livret: state.opening.livret || 0,
+      pea: state.opening.pea || 0,
+      pel: state.opening.pel || 0,
+      rates: { livret: 0, pea: 0, pel: 0 }
+    };
+    for (var i = 0; i < years.length; i++) {
+      if (years[i] === year) return bal;
+      var c = computeYear(years[i], bal);
+      bal = { livret: c.end.livret, pea: c.end.pea, pel: c.end.pel, rates: c.lastRates };
+    }
+    return bal;
+  }
+
+  function computeYear(year, carryIn) {
+    var rows = state.years[year].rows;
+    var bal = { livret: carryIn.livret, pea: carryIn.pea, pel: carryIn.pel };
+    var inherited = carryIn.rates || {};
+    // Copied, not aliased — this object is mutated month by month.
+    var lastRate = {
+      livret: inherited.livret || 0,
+      pea: inherited.pea || 0,
+      pel: inherited.pel || 0
+    };
+    var out = [];
+    var runningDeposits = 0;
+    var sum = { versements: 0, rentree: 0, achats: 0, bonus: 0, reste: 0 };
+
+    for (var m = 0; m < 12; m++) {
+      var r = rows[m];
+      var line = { rates: {}, deposits: {}, cumuls: {} };
+      var depositsTotal = 0;
+
+      ENVELOPES.forEach(function (e) {
+        var rate = r[e.rate];
+        if (rate != null) lastRate[e.key] = rate;
+        var effRate = lastRate[e.key];
+        var dep = r[e.key] || 0;
+        bal[e.key] = bal[e.key] * (1 + effRate / 1200) + dep;
+        line.rates[e.key] = effRate;
+        line.deposits[e.key] = dep;
+        line.cumuls[e.key] = bal[e.key];
+        depositsTotal += dep;
+      });
+
+      var rentree = r.rentree || 0;
+      var achats = r.achats || 0;
+      runningDeposits += depositsTotal;
+
+      line.month = m;
+      line.filled = EDIT_KEYS.some(function (k) { return r[k] != null && !/^t[A-Z]/.test(k); });
+      line.versements = depositsTotal;
+      line.rentree = rentree;
+      line.achats = achats;
+      line.bonus = r.bonus || 0;
+      line.reste = rentree - achats - depositsTotal;
+      line.total = line.cumuls.livret + line.cumuls.pea + line.cumuls.pel;
+      line.annee = runningDeposits;
+
+      sum.versements += depositsTotal;
+      sum.rentree += rentree;
+      sum.achats += achats;
+      sum.bonus += line.bonus;
+      sum.reste += line.reste;
+
+      out.push(line);
+    }
+
+    return {
+      lines: out,
+      sum: sum,
+      start: carryIn,
+      end: { livret: bal.livret, pea: bal.pea, pel: bal.pel },
+      startTotal: carryIn.livret + carryIn.pea + carryIn.pel,
+      endTotal: bal.livret + bal.pea + bal.pel,
+      lastRates: lastRate
+    };
+  }
+
+  var view = null; // computed result for the visible year
+
+  function recompute() {
+    view = computeYear(state.current, carryInFor(state.current));
+  }
+
+  /* ==========================================================
+     DOM HELPERS
+     ========================================================== */
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function $(id) { return document.getElementById(id); }
+  function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  /* ==========================================================
+     TABLE
+     ========================================================== */
+
+  var cells = [];   // cells[row][key] -> element (input or span)
+  var rowEls = [];
+  var footEls = {};
+
+  function buildHead() {
+    var groups = $("head-groups"), labels = $("head-labels");
+    groups.innerHTML = ""; labels.innerHTML = "";
+
+    var i = 0;
+    while (i < COLS.length) {
+      var g = COLS[i].group, span = 0, j = i;
+      while (j < COLS.length && COLS[j].group === g) { span++; j++; }
+      var th = el("th", null, g);
+      th.colSpan = span;
+      if (g === "") th.className = "c-mois";
+      if (g === "Trésorerie") th.style.textAlign = "center";
+      groups.appendChild(th);
+      i = j;
+    }
+
+    COLS.forEach(function (c) {
+      var th = el("th", null, c.label);
+      th.scope = "col";
+      if (c.key === "mois") th.className = "c-mois";
+      if (c.tone) th.className = (th.className ? th.className + " " : "") + "t-" + c.tone;
+      labels.appendChild(th);
+    });
+  }
+
+  function buildBody() {
+    var body = $("ledger-body");
+    body.innerHTML = "";
+    cells = []; rowEls = [];
+
+    var now = new Date();
+    var isThisYear = String(now.getFullYear()) === state.current;
+
+    for (var m = 0; m < 12; m++) {
+      var tr = el("tr");
+      if (isThisYear && now.getMonth() === m) tr.className = "is-now";
+      if (m % 3 === 2) tr.className = (tr.className ? tr.className + " " : "") + "q-end";
+      var rowCells = {};
+
+      COLS.forEach(function (c) {
+        var td = el("td");
+        if (c.key === "mois") {
+          td.className = "c-mois";
+          td.textContent = MONTHS[m];
+        } else if (c.calc) {
+          td.className = "is-calc" + (c.strong ? " is-total" : "");
+          if (c.tone) td.className += " t-" + c.tone;
+          var span = el("span", "calc", "—");
+          td.appendChild(span);
+          rowCells[c.key] = span;
+        } else {
+          if (c.tone) td.className = "t-" + c.tone;
+          var input = el("input", "cell-input");
+          input.type = "text";
+          input.inputMode = "decimal";
+          input.autocomplete = "off";
+          input.dataset.row = String(m);
+          input.dataset.key = c.key;
+          input.setAttribute("aria-label", c.label + " — " + MONTHS[m]);
+          input.placeholder = c.kind === "rate" ? "—" : "";
+          rowCells[c.key] = input;
+          td.appendChild(input);
+        }
+        tr.appendChild(td);
+      });
+
+      cells.push(rowCells);
+      rowEls.push(tr);
+      body.appendChild(tr);
+    }
+
+    var foot = $("ledger-foot");
+    foot.innerHTML = "";
+    footEls = {};
+    COLS.forEach(function (c) {
+      var td = el("td");
+      if (c.key === "mois") { td.className = "c-mois"; td.textContent = "Année"; }
+      else {
+        if (c.tone) td.className = "t-" + c.tone;
+        footEls[c.key] = td;
+      }
+      foot.appendChild(td);
+    });
+  }
+
+  function paintValue(span, value, opts) {
+    opts = opts || {};
+    span.className = "calc" + (Math.abs(value) < 0.005 ? " zero" : "");
+    span.textContent = Math.abs(value) < 0.005 && opts.dashIfZero ? "—" : fmtMoney(round2(value));
+    if (opts.signed) {
+      span.style.color = value < -0.005 ? "var(--neg)" : (value > 0.005 ? "var(--pos)" : "");
+    }
+  }
+
+  function round2(v) { return Math.round(v * 100) / 100; }
+
+  function refreshTable() {
+    var rows = state.years[state.current].rows;
+
+    for (var m = 0; m < 12; m++) {
+      var line = view.lines[m];
+      var rowCells = cells[m];
+
+      EDIT_KEYS.forEach(function (k) {
+        var input = rowCells[k];
+        if (!input || input === document.activeElement) return;
+        var v = rows[m][k];
+        var col = COL_BY_KEY[k];
+        input.value = v == null ? "" : (col.kind === "rate" ? fmtRate(v) : fmtMoney(v));
+        if (col.kind === "rate") {
+          // A blank rate inherits the last one entered above — show it ghosted
+          // so the applied rate is never invisible.
+          var eff = line.rates[RATE_TO_ENVELOPE[k]];
+          input.placeholder = eff ? fmtRate(eff) : "—";
+        }
+      });
+
+      rowEls[m].classList.toggle("is-empty", !line.filled);
+
+      paintValue(rowCells.reste, line.reste, { signed: true, dashIfZero: true });
+      paintValue(rowCells.cLivret, line.cumuls.livret, { dashIfZero: true });
+      paintValue(rowCells.cPea, line.cumuls.pea, { dashIfZero: true });
+      paintValue(rowCells.cPel, line.cumuls.pel, { dashIfZero: true });
+      paintValue(rowCells.total, line.total, { dashIfZero: true });
+      paintValue(rowCells.annee, line.annee, { dashIfZero: true });
+    }
+
+    var s = view.sum, last = view.lines[11];
+    footEls.livret.textContent = fmtMoney(round2(sumKey("livret")));
+    footEls.pea.textContent = fmtMoney(round2(sumKey("pea")));
+    footEls.pel.textContent = fmtMoney(round2(sumKey("pel")));
+    footEls.reste.textContent = fmtMoney(round2(s.reste));
+    footEls.reste.style.color = s.reste < -0.005 ? "var(--neg)" : (s.reste > 0.005 ? "var(--pos)" : "");
+    footEls.rentree.textContent = fmtMoney(round2(s.rentree));
+    footEls.achats.textContent = fmtMoney(round2(s.achats));
+    footEls.bonus.textContent = fmtMoney(round2(s.bonus));
+    footEls.tLivret.textContent = view.lastRates.livret ? fmtRate(view.lastRates.livret) : "—";
+    footEls.tPea.textContent = view.lastRates.pea ? fmtRate(view.lastRates.pea) : "—";
+    footEls.tPel.textContent = view.lastRates.pel ? fmtRate(view.lastRates.pel) : "—";
+    footEls.cLivret.textContent = fmtMoney(round2(last.cumuls.livret));
+    footEls.cPea.textContent = fmtMoney(round2(last.cumuls.pea));
+    footEls.cPel.textContent = fmtMoney(round2(last.cumuls.pel));
+    footEls.total.textContent = fmtMoney(round2(last.total));
+    footEls.annee.textContent = fmtMoney(round2(s.versements));
+  }
+
+  function sumKey(k) {
+    return state.years[state.current].rows.reduce(function (a, r) { return a + (r[k] || 0); }, 0);
+  }
+
+  /* ---------------- cell interaction ---------------- */
+
+  function onCellFocus(e) {
+    var input = e.target;
+    var v = state.years[state.current].rows[+input.dataset.row][input.dataset.key];
+    input.value = v == null ? "" : String(v).replace(".", ",");
+    input.select();
+  }
+
+  // Committed on every keystroke, not on blur — an edit is never lost because the
+  // tab was closed with the cell still focused.
+  function onCellInput(e) {
+    commit(e.target, parseNum(e.target.value));
+  }
+
+  function onCellBlur(e) {
+    var input = e.target;
+    commit(input, parseNum(input.value));
+    // Leaving a cell puts the number back into its display form.
+    var v = state.years[state.current].rows[+input.dataset.row][input.dataset.key];
+    var col = COL_BY_KEY[input.dataset.key];
+    input.value = v == null ? "" : (col.kind === "rate" ? fmtRate(v) : fmtMoney(v));
+  }
+
+  var renderTimer = null;
+
+  function commit(input, value) {
+    var m = +input.dataset.row, k = input.dataset.key;
+    if (state.years[state.current].rows[m][k] === value) return;
+    state.years[state.current].rows[m][k] = value;
+    save();
+    if (renderTimer) clearTimeout(renderTimer);
+    renderTimer = setTimeout(render, 120);
+  }
+
+  function moveFocus(from, dRow, dCol) {
+    var m = +from.dataset.row, k = from.dataset.key;
+    var order = EDIT_KEYS;
+    var ci = order.indexOf(k) + dCol;
+    var ri = m + dRow;
+    if (ci < 0) { ci = order.length - 1; ri -= 1; }
+    if (ci > order.length - 1) { ci = 0; ri += 1; }
+    if (ri < 0 || ri > 11) return;
+    var next = cells[ri][order[ci]];
+    if (next) { next.focus(); }
+  }
+
+  function onCellKey(e) {
+    var input = e.target;
+    if (e.key === "Enter") { e.preventDefault(); input.blur(); moveFocus(input, 1, 0); }
+    else if (e.key === "ArrowDown") { e.preventDefault(); input.blur(); moveFocus(input, 1, 0); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); input.blur(); moveFocus(input, -1, 0); }
+    else if (e.key === "Escape") {
+      e.preventDefault();
+      var stored = state.years[state.current].rows[+input.dataset.row][input.dataset.key];
+      input.value = stored == null ? "" : String(stored).replace(".", ",");
+      input.blur();
+    }
+    else if ((e.ctrlKey || e.metaKey) && (e.key === "d" || e.key === "D")) {
+      e.preventDefault();
+      fillDown(+input.dataset.row, input.dataset.key, parseNum(input.value));
+    }
+  }
+
+  function fillDown(fromRow, key, value) {
+    var rows = state.years[state.current].rows;
+    for (var m = fromRow; m < 12; m++) rows[m][key] = value;
+    save();
+    render();
+  }
+
+  function bindCells() {
+    $("ledger-body").addEventListener("focusin", function (e) {
+      if (e.target.classList.contains("cell-input")) onCellFocus(e);
+    });
+    $("ledger-body").addEventListener("input", function (e) {
+      if (e.target.classList.contains("cell-input")) onCellInput(e);
+    });
+    $("ledger-body").addEventListener("focusout", function (e) {
+      if (e.target.classList.contains("cell-input")) onCellBlur(e);
+    });
+    $("ledger-body").addEventListener("keydown", function (e) {
+      if (e.target.classList.contains("cell-input")) onCellKey(e);
+    });
+  }
+
+  /* ==========================================================
+     SUMMARY TILES
+     ========================================================== */
+
+  function renderSummary() {
+    var s = view.sum;
+    var last = view.lines[11];
+    var filledMonths = view.lines.filter(function (l) { return l.filled; }).length || 0;
+    var perMonth = filledMonths ? s.versements / filledMonths : 0;
+    var rate = s.rentree > 0 ? (s.versements / s.rentree) * 100 : 0;
+    var gain = view.endTotal - view.startTotal - s.versements;
+
+    var host = $("summary");
+    host.innerHTML = "";
+
+    host.appendChild(tile({
+      cls: "hero",
+      label: "Épargne " + state.current,
+      value: fmtCompact(s.versements),
+      foot: filledMonths
+        ? "Sur <strong>" + filledMonths + "</strong> mois saisis · <strong>" + fmtCompact(perMonth) + "</strong> par mois"
+        : "Saisissez un premier mois pour démarrer"
+    }));
+
+    host.appendChild(tile({
+      label: "Rentrées",
+      value: fmtCompact(s.rentree),
+      foot: "Achats <strong>" + fmtCompact(s.achats) + "</strong>"
+    }));
+
+    host.appendChild(tile({
+      label: "Reste à placer",
+      value: fmtCompact(s.reste),
+      tone: s.reste < 0 ? "neg" : (s.reste > 0 ? "pos" : ""),
+      foot: "Bonus potentiel <strong>" + fmtCompact(s.bonus) + "</strong>"
+    }));
+
+    var t = tile({
+      label: "Taux d'épargne",
+      value: nfRate.format(Math.round(rate * 10) / 10) + " %",
+      foot: "Part des rentrées mise de côté"
+    });
+    var meter = el("div", "meter");
+    var fill = el("span");
+    fill.style.width = Math.max(0, Math.min(100, rate)) + "%";
+    meter.appendChild(fill);
+    t.insertBefore(meter, t.querySelector(".foot"));
+    host.appendChild(t);
+
+    host.appendChild(tile({
+      label: "Patrimoine fin " + state.current,
+      value: fmtCompact(last.total),
+      foot: "Départ <strong>" + fmtCompact(view.startTotal) + "</strong> · Intérêts <strong>" + fmtCompact(gain) + "</strong>"
+    }));
+  }
+
+  function tile(o) {
+    var n = el("div", "tile" + (o.cls ? " " + o.cls : ""));
+    n.appendChild(el("div", "label", o.label));
+    var v = el("div", "value" + (o.tone === "neg" ? " val-neg" : o.tone === "pos" ? " val-pos" : ""), o.value);
+    n.appendChild(v);
+    var f = el("div", "foot");
+    f.innerHTML = o.foot;
+    n.appendChild(f);
+    return n;
+  }
+
+  /* ==========================================================
+     CHARTS
+     ========================================================== */
+
+  var SVG_NS = "http://www.w3.org/2000/svg";
+  function svgEl(name, attrs) {
+    var n = document.createElementNS(SVG_NS, name);
+    if (attrs) Object.keys(attrs).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+    return n;
+  }
+
+  function niceScale(max) {
+    if (!isFinite(max) || max <= 0) return { max: 100, step: 25 };
+    var raw = max / 4;
+    var mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    var norm = raw / mag;
+    var mult = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10;
+    var step = mult * mag;
+    return { max: Math.ceil(max / step) * step, step: step };
+  }
+
+  function renderLegend(host, items, shape) {
+    host.innerHTML = "";
+    items.forEach(function (it) {
+      var n = el("span", "legend-item");
+      var key = el("span", "legend-key" + (shape === "square" ? " square" : ""));
+      key.style.background = it.color;
+      n.appendChild(key);
+      n.appendChild(document.createTextNode(it.label));
+      host.appendChild(n);
+    });
+  }
+
+  function makeTooltip(host) {
+    var tip = el("div", "tooltip");
+    host.appendChild(tip);
+    return tip;
+  }
+
+  function positionTip(tip, host, x, y) {
+    var w = host.clientWidth;
+    var tw = tip.offsetWidth || 170;
+    var left = x + 14;
+    if (left + tw > w - 4) left = x - tw - 14;
+    if (left < 4) left = 4;
+    tip.style.left = left + "px";
+    tip.style.top = Math.max(4, y - 12) + "px";
+  }
+
+  /* ---------- Chart 1: cumulative wealth, one line per envelope ---------- */
+
+  function drawWealth() {
+    var host = $("chart-wealth");
+    host.innerHTML = "";
+
+    var series = ENVELOPES.map(function (e) {
+      return {
+        label: e.label,
+        color: cssVar(e.color),
+        values: view.lines.map(function (l) { return l.cumuls[e.key]; })
+      };
+    });
+
+    renderLegend($("legend-wealth"), series);
+
+    var peak = 0;
+    series.forEach(function (s) { s.values.forEach(function (v) { if (v > peak) peak = v; }); });
+    $("wealth-sub").textContent = peak > 0 ? "fin " + state.current + " · " + fmtCompact(view.lines[11].total) : "";
+
+    if (peak <= 0) {
+      host.appendChild(el("div", "empty-chart", "Les courbes apparaissent dès le premier versement saisi."));
+      return;
+    }
+
+    var W = Math.max(360, host.clientWidth - 24);
+    var H = 248;
+    var pad = { t: 14, r: 62, b: 26, l: 54 };
+    var iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+
+    var scale = niceScale(peak);
+    var x = function (i) { return pad.l + (iw * i) / 11; };
+    var y = function (v) { return pad.t + ih - (v / scale.max) * ih; };
+
+    var svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, height: H, role: "img" });
+    svg.setAttribute("aria-label", "Évolution du patrimoine cumulé par enveloppe en " + state.current);
+
+    var grid = cssVar("--grid"), axis = cssVar("--axis"), muted = "#898781";
+
+    for (var v = 0; v <= scale.max + 0.001; v += scale.step) {
+      svg.appendChild(svgEl("line", { x1: pad.l, x2: pad.l + iw, y1: y(v), y2: y(v), stroke: v === 0 ? axis : grid, "stroke-width": 1 }));
+      var lb = svgEl("text", { x: pad.l - 9, y: y(v) + 3.5, "text-anchor": "end", fill: muted, "font-size": 10.5 });
+      lb.style.fontFamily = "var(--mono)";
+      lb.textContent = fmtAxis(v);
+      svg.appendChild(lb);
+    }
+
+    MONTHS_SHORT.forEach(function (m, i) {
+      if (i % 2 === 1 && W < 620) return;
+      var t = svgEl("text", { x: x(i), y: H - 8, "text-anchor": "middle", fill: muted, "font-size": 10.5 });
+      t.textContent = m;
+      svg.appendChild(t);
+    });
+
+    var cross = svgEl("line", { y1: pad.t, y2: pad.t + ih, stroke: axis, "stroke-width": 1, opacity: 0 });
+    svg.appendChild(cross);
+
+    series.forEach(function (s) {
+      var d = s.values.map(function (val, i) { return (i ? "L" : "M") + x(i) + " " + y(val); }).join(" ");
+      svg.appendChild(svgEl("path", { d: d, fill: "none", stroke: s.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+      // Surface ring keeps the end dot legible where lines cross.
+      svg.appendChild(svgEl("circle", { cx: x(11), cy: y(s.values[11]), r: 4.5, fill: s.color, stroke: cssVar("--chart-surface"), "stroke-width": 2 }));
+    });
+
+    // Direct end labels only when they don't collide — otherwise the legend carries identity.
+    var ends = series.map(function (s) { return { s: s, y: y(s.values[11]) }; }).sort(function (a, b) { return a.y - b.y; });
+    var roomy = ends.every(function (e, i) { return i === 0 || e.y - ends[i - 1].y >= 14; });
+    if (roomy) {
+      ends.forEach(function (e) {
+        var t = svgEl("text", { x: x(11) + 10, y: e.y + 3.5, fill: cssVar("--ink-2"), "font-size": 10.5 });
+        t.style.fontFamily = "var(--mono)";
+        t.textContent = fmtCompact(e.s.values[11]);
+        svg.appendChild(t);
+      });
+    }
+
+    var dots = series.map(function (s) {
+      var c = svgEl("circle", { r: 4.5, fill: s.color, stroke: cssVar("--chart-surface"), "stroke-width": 2, opacity: 0 });
+      svg.appendChild(c);
+      return c;
+    });
+
+    var hit = svgEl("rect", { x: pad.l, y: pad.t, width: iw, height: ih, fill: "transparent" });
+    svg.appendChild(hit);
+    host.appendChild(svg);
+
+    var tip = makeTooltip(host);
+
+    function hide() {
+      tip.dataset.show = "false";
+      cross.setAttribute("opacity", 0);
+      dots.forEach(function (d) { d.setAttribute("opacity", 0); });
+    }
+
+    svg.addEventListener("mousemove", function (ev) {
+      var box = svg.getBoundingClientRect();
+      var px = (ev.clientX - box.left) * (W / box.width);
+      if (px < pad.l - 12 || px > pad.l + iw + 12) return hide();
+      var i = Math.max(0, Math.min(11, Math.round(((px - pad.l) / iw) * 11)));
+
+      cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("opacity", 1);
+      series.forEach(function (s, k) {
+        dots[k].setAttribute("cx", x(i)); dots[k].setAttribute("cy", y(s.values[i])); dots[k].setAttribute("opacity", 1);
+      });
+
+      var rows = series.map(function (s) {
+        return '<div class="tt-row"><span class="k" style="background:' + s.color + '"></span><span class="n">' + s.label + '</span><span class="v">' + fmtMoney0(s.values[i]) + "</span></div>";
+      }).join("");
+      tip.innerHTML = '<div class="tt-head">' + MONTHS[i] + " " + state.current + "</div>" + rows +
+        '<div class="tt-row tt-total"><span class="n">Total</span><span class="v">' + fmtMoney0(view.lines[i].total) + "</span></div>";
+      tip.dataset.show = "true";
+      positionTip(tip, host, (x(i) * box.width) / W, ev.clientY - box.top);
+    });
+    svg.addEventListener("mouseleave", hide);
+  }
+
+  /* ---------- Chart 2: monthly saving effort, stacked columns ---------- */
+
+  function roundedTop(x, y, w, h, r) {
+    r = Math.min(r, h, w / 2);
+    return "M" + x + " " + (y + h) +
+      " L" + x + " " + (y + r) +
+      " Q" + x + " " + y + " " + (x + r) + " " + y +
+      " L" + (x + w - r) + " " + y +
+      " Q" + (x + w) + " " + y + " " + (x + w) + " " + (y + r) +
+      " L" + (x + w) + " " + (y + h) + " Z";
+  }
+
+  function drawEffort() {
+    var host = $("chart-effort");
+    host.innerHTML = "";
+
+    var series = ENVELOPES.map(function (e) {
+      return {
+        label: e.label,
+        color: cssVar(e.color),
+        values: view.lines.map(function (l) { return l.deposits[e.key]; })
+      };
+    });
+
+    renderLegend($("legend-effort"), series, "square");
+
+    var totals = view.lines.map(function (l) { return l.versements; });
+    var peak = Math.max.apply(null, totals);
+    var months = totals.filter(function (t) { return t > 0; }).length;
+    $("effort-sub").textContent = months ? "moy. " + fmtCompact(view.sum.versements / months) + " / mois" : "";
+
+    if (peak <= 0) {
+      host.appendChild(el("div", "empty-chart", "Renseignez vos versements Livret, PEA ou PEL pour voir la répartition mois par mois."));
+      return;
+    }
+
+    var W = Math.max(320, host.clientWidth - 24);
+    var H = 248;
+    var pad = { t: 14, r: 10, b: 26, l: 50 };
+    var iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+
+    var scale = niceScale(peak);
+    var band = iw / 12;
+    var bw = Math.min(24, band * 0.58);
+    var y = function (v) { return pad.t + ih - (v / scale.max) * ih; };
+    var cx = function (i) { return pad.l + band * i + band / 2; };
+
+    var svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, height: H, role: "img" });
+    svg.setAttribute("aria-label", "Versements mensuels par enveloppe en " + state.current);
+
+    var grid = cssVar("--grid"), axis = cssVar("--axis"), muted = "#898781", surface = cssVar("--chart-surface");
+
+    for (var v = 0; v <= scale.max + 0.001; v += scale.step) {
+      svg.appendChild(svgEl("line", { x1: pad.l, x2: pad.l + iw, y1: y(v), y2: y(v), stroke: v === 0 ? axis : grid, "stroke-width": 1 }));
+      var lb = svgEl("text", { x: pad.l - 9, y: y(v) + 3.5, "text-anchor": "end", fill: muted, "font-size": 10.5 });
+      lb.style.fontFamily = "var(--mono)";
+      lb.textContent = fmtAxis(v);
+      svg.appendChild(lb);
+    }
+
+    MONTHS_SHORT.forEach(function (m, i) {
+      if (i % 2 === 1 && W < 560) return;
+      var t = svgEl("text", { x: cx(i), y: H - 8, "text-anchor": "middle", fill: muted, "font-size": 10.5 });
+      t.textContent = m;
+      svg.appendChild(t);
+    });
+
+    for (var i = 0; i < 12; i++) {
+      var acc = 0;
+      var stack = [];
+      series.forEach(function (s) {
+        var val = s.values[i];
+        if (val <= 0) return;
+        stack.push({ s: s, from: acc, to: acc + val });
+        acc += val;
+      });
+      stack.forEach(function (seg, k) {
+        var top = y(seg.to);
+        var bottom = y(seg.from);
+        // 2px surface gap between touching segments — the surface does the separating,
+        // never a stroke around the mark.
+        var h = Math.max(1, bottom - top - (k > 0 ? 2 : 0));
+        var isTop = k === stack.length - 1;
+        var d = isTop
+          ? roundedTop(cx(i) - bw / 2, top, bw, h, 4)
+          : "M" + (cx(i) - bw / 2) + " " + top + " h" + bw + " v" + h + " h" + -bw + " Z";
+        svg.appendChild(svgEl("path", { d: d, fill: seg.s.color }));
+      });
+    }
+
+    var hover = svgEl("rect", { y: pad.t, height: ih, fill: cssVar("--accent"), opacity: 0, rx: 4 });
+    svg.insertBefore(hover, svg.firstChild.nextSibling);
+
+    var hit = svgEl("rect", { x: pad.l, y: pad.t, width: iw, height: ih, fill: "transparent" });
+    svg.appendChild(hit);
+    host.appendChild(svg);
+
+    var tip = makeTooltip(host);
+
+    svg.addEventListener("mousemove", function (ev) {
+      var box = svg.getBoundingClientRect();
+      var px = (ev.clientX - box.left) * (W / box.width);
+      if (px < pad.l || px > pad.l + iw) { tip.dataset.show = "false"; hover.setAttribute("opacity", 0); return; }
+      var i = Math.max(0, Math.min(11, Math.floor((px - pad.l) / band)));
+
+      hover.setAttribute("x", cx(i) - band / 2 + 2);
+      hover.setAttribute("width", band - 4);
+      hover.setAttribute("opacity", 0.07);
+
+      var rows = series.map(function (s) {
+        return '<div class="tt-row"><span class="k" style="background:' + s.color + '"></span><span class="n">' + s.label + '</span><span class="v">' + fmtMoney0(s.values[i]) + "</span></div>";
+      }).join("");
+      tip.innerHTML = '<div class="tt-head">' + MONTHS[i] + " " + state.current + "</div>" + rows +
+        '<div class="tt-row tt-total"><span class="n">Versé</span><span class="v">' + fmtMoney0(totals[i]) + "</span></div>";
+      tip.dataset.show = "true";
+      positionTip(tip, host, (cx(i) * box.width) / W, ev.clientY - box.top);
+    });
+    svg.addEventListener("mouseleave", function () {
+      tip.dataset.show = "false";
+      hover.setAttribute("opacity", 0);
+    });
+  }
+
+  /* ==========================================================
+     YEARS
+     ========================================================== */
+
+  function renderYears() {
+    var host = $("years");
+    host.innerHTML = "";
+    sortedYears().forEach(function (y) {
+      var b = el("button", "year-tab", y);
+      b.type = "button";
+      b.setAttribute("aria-current", y === state.current ? "true" : "false");
+      b.addEventListener("click", function () {
+        state.current = y;
+        save();
+        render();
+      });
+      host.appendChild(b);
+    });
+    var add = el("button", "year-add", "+");
+    add.type = "button";
+    add.title = "Ajouter l'année suivante";
+    add.setAttribute("aria-label", "Ajouter une année");
+    add.addEventListener("click", function () {
+      var years = sortedYears();
+      var next = String(Number(years[years.length - 1]) + 1);
+      if (!state.years[next]) state.years[next] = emptyYear();
+      state.current = next;
+      save();
+      render();
+    });
+    host.appendChild(add);
+    $("ledger-year").textContent = state.current;
+  }
+
+  /* ==========================================================
+     PERSISTENCE + RENDER LOOP
+     ========================================================== */
+
+  var saveTimer = null;
+
+  function save() {
+    setPill("dirty", "Modifié…");
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      writeStore(state);
+      if (storageOK) {
+        var t = new Date();
+        setPill("ok", "Enregistré " + String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0"));
+      } else {
+        setPill("off", "Stockage bloqué — exportez");
+      }
+    }, 350);
+  }
+
+  function setPill(stateName, text) {
+    $("save-pill").dataset.state = stateName;
+    $("save-text").textContent = text;
+  }
+
+  function render() {
+    recompute();
+    renderYears();
+    refreshTable();
+    renderSummary();
+    drawWealth();
+    drawEffort();
+    ["livret", "pea", "pel"].forEach(function (k) {
+      var input = $("open-" + k);
+      if (input === document.activeElement) return;
+      input.value = state.opening[k] ? fmtMoney(state.opening[k]) : "";
+    });
+  }
+
+  /* ==========================================================
+     THEME
+     ========================================================== */
+
+  function applyTheme() {
+    if (state.theme === "system") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", state.theme);
+    $("theme-btn").textContent = state.theme === "system" ? "Auto" : state.theme === "light" ? "Clair" : "Sombre";
+  }
+
+  /* ==========================================================
+     IMPORT / EXPORT
+     ========================================================== */
+
+  function download(name, text, mime) {
+    var blob = new Blob([text], { type: mime });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function exportJSON() {
+    download("compta-epargne-" + new Date().toISOString().slice(0, 10) + ".json",
+      JSON.stringify(state, null, 2), "application/json");
+  }
+
+  function exportCSV() {
+    var sep = ";";
+    var lines = [COLS.map(function (c) { return c.label; }).join(sep)];
+    var fr = function (n) { return String(round2(n)).replace(".", ","); };
+    for (var m = 0; m < 12; m++) {
+      var r = state.years[state.current].rows[m], l = view.lines[m];
+      lines.push([
+        MONTHS[m], fr(r.livret || 0), fr(r.pea || 0), fr(r.pel || 0), fr(l.reste),
+        fr(r.rentree || 0), fr(r.achats || 0), fr(r.bonus || 0),
+        fr(l.rates.livret), fr(l.rates.pea), fr(l.rates.pel),
+        fr(l.cumuls.livret), fr(l.cumuls.pea), fr(l.cumuls.pel),
+        fr(l.total), fr(l.annee)
+      ].join(sep));
+    }
+    // BOM so Excel opens the accents correctly.
+    download("compta-" + state.current + ".csv", "﻿" + lines.join("\r\n"), "text/csv;charset=utf-8");
+  }
+
+  function importJSON(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        state = migrate(JSON.parse(String(reader.result)));
+        applyTheme();
+        save();
+        render();
+      } catch (e) {
+        window.alert("Fichier illisible : " + e.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  /* ==========================================================
+     WIRING
+     ========================================================== */
+
+  function bindTools() {
+    $("theme-btn").addEventListener("click", function () {
+      state.theme = state.theme === "system" ? "light" : state.theme === "light" ? "dark" : "system";
+      applyTheme();
+      save();
+      drawWealth();
+      drawEffort();
+    });
+
+    $("act-export-json").addEventListener("click", function () { closeMenu(); exportJSON(); });
+    $("act-export-csv").addEventListener("click", function () { closeMenu(); exportCSV(); });
+    $("act-import-json").addEventListener("click", function () { closeMenu(); $("file-input").click(); });
+    $("file-input").addEventListener("change", function (e) {
+      if (e.target.files && e.target.files[0]) importJSON(e.target.files[0]);
+      e.target.value = "";
+    });
+
+    $("act-fill-year").addEventListener("click", function () {
+      closeMenu();
+      var rows = state.years[state.current].rows;
+      for (var m = 1; m < 12; m++) {
+        EDIT_KEYS.forEach(function (k) { rows[m][k] = rows[0][k]; });
+      }
+      save();
+      render();
+    });
+
+    $("act-reset-year").addEventListener("click", function () {
+      closeMenu();
+      if (window.confirm("Vider tous les montants de " + state.current + " ?")) {
+        state.years[state.current] = emptyYear();
+        save();
+        render();
+      }
+    });
+
+    ["livret", "pea", "pel"].forEach(function (k) {
+      var input = $("open-" + k);
+      input.addEventListener("focus", function () { input.value = state.opening[k] ? String(state.opening[k]).replace(".", ",") : ""; });
+      input.addEventListener("blur", function () {
+        state.opening[k] = parseNum(input.value) || 0;
+        save();
+        render();
+      });
+    });
+
+    document.addEventListener("click", function (e) {
+      var menu = $("menu");
+      if (menu.open && !menu.contains(e.target)) menu.open = false;
+    });
+
+    var scroller = $("table-scroll");
+    scroller.addEventListener("scroll", function () {
+      scroller.dataset.scrolled = scroller.scrollLeft > 0 ? "true" : "false";
+    });
+
+    var resizeTimer = null;
+    window.addEventListener("resize", function () {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () { drawWealth(); drawEffort(); }, 120);
+    });
+
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+        if (state.theme === "system") { drawWealth(); drawEffort(); }
+      });
+    }
+  }
+
+  function closeMenu() { $("menu").open = false; }
+
+  /* ---------------- boot ---------------- */
+
+  applyTheme();
+  buildHead();
+  buildBody();
+  bindCells();
+  bindTools();
+  render();
+  if (!storageOK) setPill("off", "Stockage bloqué — exportez");
+})();
+</script>
+
+</body>
+</html>
