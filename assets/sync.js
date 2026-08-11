@@ -43,6 +43,41 @@ function headers(session) {
   };
 }
 
+/** Clé sous laquelle l'application range son état dans le localStorage. */
+const STORAGE_KEY = "compta.epargne.v1";
+
+/**
+ * Ramène ce qui est stocké côté serveur à la forme attendue par
+ * l'application, et refuse ce qui n'y ressemble pas.
+ *
+ * Deux formes circulent :
+ *  - l'état lui-même, reconnaissable à sa propriété `years` ;
+ *  - une copie brute du localStorage, `{"compta.epargne.v1": "{…}"}`,
+ *    produite par la procédure de reprise des données. C'est le cas qui a
+ *    fait repartir l'application sur un tableau vide : elle ne reconnaissait
+ *    pas l'enveloppe et retombait sur l'état par défaut.
+ *
+ * Renvoyer null plutôt qu'un état vide est essentiel : l'appelant conserve
+ * alors les données locales au lieu de les écraser.
+ */
+function normalize(data) {
+  if (!data || typeof data !== "object") return null;
+  if (data.years) return data;
+
+  const wrapped = data[STORAGE_KEY];
+  if (typeof wrapped === "string") {
+    try {
+      const parsed = JSON.parse(wrapped);
+      if (parsed?.years) return parsed;
+    } catch {
+      return null;
+    }
+  }
+  if (wrapped?.years) return wrapped;
+
+  return null;
+}
+
 /** Données enregistrées côté serveur, ou null si le compte n'en a pas encore. */
 async function fetchRemote(session) {
   const url = `${REST}?app=eq.${encodeURIComponent(APP_NAME)}&select=data,updated_at`;
@@ -54,7 +89,10 @@ async function fetchRemote(session) {
   const rows = await response.json();
   if (!rows.length) return null;
 
-  return { state: rows[0].data, updatedAt: Date.parse(rows[0].updated_at) || 0 };
+  const state = normalize(rows[0].data);
+  if (!state) return { state: null, updatedAt: Date.parse(rows[0].updated_at) || 0 };
+
+  return { state, updatedAt: Date.parse(rows[0].updated_at) || 0 };
 }
 
 /** Écrit (ou remplace) les données du compte connecté. */
@@ -109,7 +147,12 @@ if (session?.access_token && session.user?.id && app) {
       const remote = await fetchRemote(session);
       const local = app.getLocalStamp();
 
-      if (remote && remote.updatedAt > local) {
+      if (remote && remote.state === null) {
+        // Le serveur contient quelque chose d'illisible pour l'application.
+        // On n'y touche pas et on garde les données locales : écraser l'un
+        // ou l'autre ferait perdre des données pour de bon.
+        app.onSyncState("error", "données serveur non reconnues, non modifiées");
+      } else if (remote && remote.updatedAt > local) {
         app.applyRemoteState(remote.state);
         app.onSyncState("pulled");
       } else if (!remote || local > remote.updatedAt) {
