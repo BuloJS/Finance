@@ -657,10 +657,12 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
           <dl>
             <dt>Taux</dt>
             <dd>Un taux saisi vaut pour les mois suivants tant qu'un autre ne le remplace pas — inutile de le retaper chaque mois.</dd>
+            <dt>Quand les intérêts tombent</dt>
+            <dd>Livret et PEL : les intérêts s'accumulent chaque mois mais ne sont versés qu'en <strong>décembre</strong>, comme à la banque. Les cumuls de janvier à novembre sont donc plats si vous ne versez rien — c'est normal. PEA : le taux est une hypothèse de performance de marché, appliquée en continu.</dd>
             <dt>Formats acceptés</dt>
             <dd><code>1200</code>, <code>1 200,50</code>, <code>1200.5</code>, <code>-80</code></dd>
             <dt>Sauvegarde</dt>
-            <dd>Automatique dans ce navigateur. Exportez le JSON de temps en temps pour garder une copie.</dd>
+            <dd>Automatique, et synchronisée entre vos PC via votre compte. Exportez le JSON de temps en temps pour garder une copie.</dd>
           </dl>
         </div>
       </div>
@@ -847,10 +849,14 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
      COMPUTATION
      ========================================================== */
 
+  // annualCredit : les intérêts sont acquis mois par mois mais versés en une
+  // seule fois en décembre, comme le font réellement le Livret et le PEL. Le
+  // PEA en est exclu : son « taux » est une hypothèse de performance de
+  // marché, qui progresse en continu et n'est pas un intérêt crédité.
   var ENVELOPES = [
-    { key: "livret", cumul: "cLivret", rate: "tLivret", label: "Livret", color: "--s1" },
-    { key: "pea",    cumul: "cPea",    rate: "tPea",    label: "PEA",    color: "--s2" },
-    { key: "pel",    cumul: "cPel",    rate: "tPel",    label: "PEL",    color: "--s3" }
+    { key: "livret", cumul: "cLivret", rate: "tLivret", label: "Livret", color: "--s1", annualCredit: true },
+    { key: "pea",    cumul: "cPea",    rate: "tPea",    label: "PEA",    color: "--s2", annualCredit: false },
+    { key: "pel",    cumul: "cPel",    rate: "tPel",    label: "PEL",    color: "--s3", annualCredit: true }
   ];
 
   // Carry-in for a year: December of the previous year in the book — balances *and*
@@ -881,13 +887,17 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
       pea: inherited.pea || 0,
       pel: inherited.pel || 0
     };
+    // Intérêts acquis mais pas encore versés, pour les enveloppes créditées
+    // une fois l'an. Remis à zéro à chaque année : le versement de décembre
+    // rejoint le solde, qui devient le report de l'année suivante.
+    var accrued = { livret: 0, pea: 0, pel: 0 };
     var out = [];
     var runningDeposits = 0;
     var sum = { base: 0, versements: 0, rentree: 0, achats: 0, bonus: 0, invest: 0, monthsSaved: 0 };
 
     for (var m = 0; m < 12; m++) {
       var r = rows[m];
-      var line = { rates: {}, deposits: {}, cumuls: {} };
+      var line = { rates: {}, deposits: {}, cumuls: {}, accrued: {}, credited: {} };
       var depositsTotal = 0;
 
       ENVELOPES.forEach(function (e) {
@@ -895,7 +905,22 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
         if (rate != null) lastRate[e.key] = rate;
         var effRate = lastRate[e.key];
         var dep = r[e.key] || 0;
-        bal[e.key] = bal[e.key] * (1 + effRate / 1200) + dep;
+
+        if (e.annualCredit) {
+          // Les intérêts s'accumulent sur le solde du mois sans y être
+          // ajoutés, puis sont versés en décembre. Un solde de juin
+          // correspond donc à ce que la banque affiche vraiment.
+          accrued[e.key] += bal[e.key] * (effRate / 1200);
+          bal[e.key] += dep;
+          if (m === 11) {
+            bal[e.key] += accrued[e.key];
+            line.credited[e.key] = accrued[e.key];
+          }
+        } else {
+          bal[e.key] = bal[e.key] * (1 + effRate / 1200) + dep;
+        }
+
+        line.accrued[e.key] = e.annualCredit ? accrued[e.key] : 0;
         line.rates[e.key] = effRate;
         line.deposits[e.key] = dep;
         line.cumuls[e.key] = bal[e.key];
