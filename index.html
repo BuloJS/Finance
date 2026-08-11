@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Compta — Épargne mensuelle</title>
+<!-- Accès réservé au compte unique : masque la page, puis vérifie la session -->
+<script>document.documentElement.style.visibility = "hidden";</script>
+<script type="module" src="assets/guard.js"></script>
+<!-- Synchronisation entre PC ; s'exécute après le script principal -->
+<script type="module" src="assets/sync.js"></script>
 </head>
 <body>
 
@@ -749,15 +754,27 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
   var storageOK = true;
   var memory = null;
 
+  // Horodatage de la dernière écriture locale, pour arbitrer avec la version
+  // enregistrée sur le serveur (voir assets/sync.js).
+  var STAMP_KEY = STORAGE_KEY + ".stamp";
+  var localStamp = 0;
+
   function readStore() {
     try {
       var raw = window.localStorage.getItem(STORAGE_KEY);
+      localStamp = Number(window.localStorage.getItem(STAMP_KEY)) || 0;
       return raw ? JSON.parse(raw) : null;
     } catch (e) { storageOK = false; return memory; }
   }
   function writeStore(obj) {
-    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(obj)); }
+    localStamp = Date.now();
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+      window.localStorage.setItem(STAMP_KEY, String(localStamp));
+    }
     catch (e) { storageOK = false; memory = obj; }
+    // Recopie sur le serveur si la synchronisation est active.
+    if (window.__financeSync) window.__financeSync.push(obj, localStamp);
   }
 
   function migrate(raw) {
@@ -1827,6 +1844,33 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
   bindTools();
   render();
   if (!storageOK) setPill("off", "Stockage bloqué — exportez");
+
+  /* ---------------- pont vers la synchronisation ---------------- */
+  // assets/sync.js est un module, donc exécuté après ce script : il trouve
+  // ces fonctions déjà en place. L'application démarre sur les données
+  // locales sans jamais attendre le réseau ; la synchronisation vient
+  // par-dessus.
+  window.__financeApp = {
+    getState: function () { return state; },
+    getLocalStamp: function () { return localStamp; },
+
+    /** Le serveur avait une version plus récente : on l'adopte. */
+    applyRemoteState: function (raw) {
+      state = migrate(raw);
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        window.localStorage.setItem(STAMP_KEY, String(Date.now()));
+      } catch (e) { storageOK = false; }
+      render();
+    },
+
+    /** Retour d'état de la synchronisation, affiché dans la pastille. */
+    onSyncState: function (kind, detail) {
+      if (kind === "ok") setPill("ok", "Synchronisé");
+      else if (kind === "pulled") setPill("ok", "Récupéré depuis le serveur");
+      else setPill("off", "Hors ligne — sauvegarde locale" + (detail ? " (" + detail + ")" : ""));
+    }
+  };
 })();
 </script>
 
