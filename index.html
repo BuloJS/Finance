@@ -467,6 +467,86 @@ table.ledger { border-collapse: separate; border-spacing: 0; width: 100%; }
   background: var(--surface); border-radius: 2px;
 }
 
+/* Detail marker — a cell can carry the breakdown behind its amount.
+   The dot stays discreet until the cell is hovered; once a breakdown exists
+   it turns solid so the row reads at a glance. */
+.has-note-slot { position: relative; }
+
+.note-btn {
+  position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; padding: 0;
+  border: 0; border-radius: 50%;
+  background: transparent; color: var(--ink-3);
+  font-size: 15px; line-height: 12px; cursor: pointer;
+  opacity: 0; transition: opacity .12s ease, color .12s ease;
+}
+td:hover > .note-btn, .note-btn:focus-visible { opacity: 1; }
+.note-btn:hover { color: var(--accent); }
+.note-btn.has-note { opacity: 1; color: var(--accent); }
+
+/* A detailed amount is the sum of its lines, so it is no longer typed here */
+.cell-input.is-detailed { cursor: pointer; font-style: italic; }
+
+/* Detail dialog */
+#note-dialog {
+  width: min(30rem, calc(100vw - 2rem));
+  padding: 1.25rem;
+  border: 1px solid var(--line-strong); border-radius: 12px;
+  background: var(--surface); color: var(--ink);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .35);
+}
+#note-dialog::backdrop { background: rgba(0, 0, 0, .5); }
+#note-dialog h3 { margin: 0 0 .25rem; font-size: 1.05rem; }
+.note-hint { margin: 0 0 1rem; font-size: .82rem; color: var(--ink-3); }
+
+.note-row { display: flex; gap: .5rem; margin-bottom: .5rem; }
+.note-row input {
+  height: 34px; padding: 0 .6rem;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface-2); color: var(--ink);
+  font-size: .9rem;
+}
+.note-label { flex: 1 1 auto; min-width: 0; }
+.note-amount {
+  flex: 0 0 6.5rem; text-align: right;
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+}
+.note-row input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.note-del {
+  flex: 0 0 auto; width: 34px; height: 34px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: transparent; color: var(--ink-3);
+  font-size: 1.05rem; line-height: 1; cursor: pointer;
+}
+.note-del:hover { color: var(--neg); border-color: var(--neg); }
+
+.note-add {
+  margin: .25rem 0 1rem;
+  padding: .4rem .7rem;
+  border: 1px dashed var(--line-strong); border-radius: 8px;
+  background: transparent; color: var(--ink-2);
+  font: inherit; font-size: .85rem; cursor: pointer;
+}
+.note-add:hover { color: var(--ink); border-color: var(--accent); }
+
+.note-total {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin: 0 0 1.1rem; padding-top: .7rem;
+  border-top: 1px solid var(--line);
+  font-size: .9rem; color: var(--ink-2);
+}
+.note-total strong { font-family: var(--mono); font-size: 1.05rem; color: var(--ink); }
+
+#note-dialog menu { display: flex; justify-content: flex-end; gap: .5rem; margin: 0; padding: 0; }
+#note-dialog menu button {
+  padding: .5rem .9rem; border-radius: 8px;
+  border: 1px solid var(--line-strong); background: transparent; color: var(--ink);
+  font: inherit; font-size: .88rem; cursor: pointer;
+}
+#note-dialog menu .note-save { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+#note-dialog menu button:hover { filter: brightness(1.1); }
+
 /* Computed cell — a translucent wash so the zebra and the row hover still read through */
 .calc {
   display: block; padding: 0 9px; line-height: var(--row-h);
@@ -669,6 +749,21 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     </details>
   </section>
 
+  <!-- Détail d'un montant : le « pourquoi » derrière une case. -->
+  <dialog id="note-dialog">
+    <form method="dialog" id="note-form">
+      <h3 id="note-title">Détail</h3>
+      <p class="note-hint">Une ligne par dépense. Le total remplace le montant de la case.</p>
+      <div id="note-rows"></div>
+      <button type="button" class="note-add" id="note-add">+ Ajouter une ligne</button>
+      <p class="note-total">Total <strong id="note-total">0 €</strong></p>
+      <menu>
+        <button type="button" class="note-cancel" id="note-cancel">Annuler</button>
+        <button type="submit" class="note-save">Enregistrer</button>
+      </menu>
+    </form>
+  </dialog>
+
   <section class="charts">
     <div class="panel">
       <div class="panel-head">
@@ -712,7 +807,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     { key: "pel",     label: "PEL",                     group: "Versements",  kind: "money", edit: true },
     { key: "invest",  label: "Investissement",          group: "Trésorerie",  kind: "money", calc: true, signed: true },
     { key: "rentree", label: "Rentrée",                 group: "Trésorerie",  kind: "money", edit: true, tone: "in" },
-    { key: "achats",  label: "Achats",                  group: "Trésorerie",  kind: "money", edit: true, tone: "out" },
+    { key: "achats",  label: "Achats",                  group: "Trésorerie",  kind: "money", edit: true, tone: "out", note: true },
     { key: "bonus",   label: "Invest bonus potentiel",  group: "Trésorerie",  kind: "money", calc: true, signed: true, tone: "bonus" },
     { key: "tLivret", label: "Taux Livret",             group: "Taux annuel", kind: "rate",  edit: true },
     { key: "tPea",    label: "Taux PEA",                group: "Taux annuel", kind: "rate",  edit: true },
@@ -779,6 +874,41 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     if (window.__financeSync) window.__financeSync.push(obj, localStamp);
   }
 
+  /* ---------------- détail d'une case ---------------- */
+
+  // Colonnes acceptant un détail, sous la forme
+  //   row.details = { achats: [{ label: "Billets d'avion", amount: 500 }, …] }
+  // Quand un détail existe, la case n'est plus saisie à la main : elle vaut
+  // la somme des lignes, ce qui évite qu'un total et son détail divergent.
+  var NOTE_KEYS = COLS.filter(function (c) { return c.note; }).map(function (c) { return c.key; });
+
+  /** Ne garde que ce qui a la bonne forme, et renvoie null si rien ne reste. */
+  function cleanDetails(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var out = null;
+    NOTE_KEYS.forEach(function (key) {
+      if (!Array.isArray(raw[key])) return;
+      var items = raw[key]
+        .map(function (item) {
+          return {
+            label: String(item && item.label != null ? item.label : "").slice(0, 80),
+            amount: Number(item && item.amount) || 0
+          };
+        })
+        .filter(function (item) { return item.label || item.amount; });
+      if (items.length) { out = out || {}; out[key] = items; }
+    });
+    return out;
+  }
+
+  function detailsFor(row, key) {
+    return (row.details && row.details[key]) || null;
+  }
+
+  function detailsSum(items) {
+    return round2(items.reduce(function (t, item) { return t + (Number(item.amount) || 0); }, 0));
+  }
+
   function migrate(raw) {
     if (!raw || typeof raw !== "object" || !raw.years) return defaultState();
     var st = defaultState();
@@ -791,6 +921,11 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
         EDIT_KEYS.forEach(function (k) {
           year.rows[i][k] = typeof s[k] === "number" && isFinite(s[k]) ? s[k] : null;
         });
+        // Détail d'une case (le « pourquoi » d'un montant). Sans cette
+        // reprise, il serait effacé à chaque chargement, migrate() ne
+        // recopiant que les colonnes chiffrées.
+        var details = cleanDetails(s.details);
+        if (details) year.rows[i].details = details;
       }
       st.years[y] = year;
     });
@@ -1057,6 +1192,19 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
           input.placeholder = c.kind === "rate" ? "—" : "";
           rowCells[c.key] = input;
           td.appendChild(input);
+
+          if (c.note) {
+            td.className = (td.className ? td.className + " " : "") + "has-note-slot";
+            var btn = el("button", "note-btn");
+            btn.type = "button";
+            btn.dataset.row = String(m);
+            btn.dataset.key = c.key;
+            btn.title = "Détailler ce montant";
+            btn.setAttribute("aria-label", "Détailler " + c.label + " — " + MONTHS[m]);
+            btn.textContent = "•";
+            td.appendChild(btn);
+            rowCells[c.key + ":note"] = btn;
+          }
         }
         tr.appendChild(td);
       });
@@ -1118,6 +1266,20 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
       });
 
       rowEls[m].classList.toggle("is-empty", !line.filled);
+
+      // Une case détaillée n'est plus saisissable : son montant est la somme
+      // des lignes du détail.
+      NOTE_KEYS.forEach(function (k) {
+        var input = rowCells[k], btn = rowCells[k + ":note"];
+        if (!input || !btn) return;
+        var items = detailsFor(rows[m], k);
+        input.readOnly = Boolean(items);
+        input.classList.toggle("is-detailed", Boolean(items));
+        btn.classList.toggle("has-note", Boolean(items));
+        btn.title = items
+          ? items.length + (items.length > 1 ? " lignes détaillées" : " ligne détaillée")
+          : "Détailler ce montant";
+      });
 
       // On a month that has entries, an exact zero is a real result, so it
       // prints 0 € rather than a dash.
@@ -1869,6 +2031,115 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
   bindTools();
   render();
   if (!storageOK) setPill("off", "Stockage bloqué — exportez");
+
+  /* ---------------- détail d'une case : boîte de dialogue ---------------- */
+
+  var noteTarget = null; // { row, key }
+
+  function noteRowEl(item) {
+    var wrap = el("div", "note-row");
+
+    var label = el("input", "note-label");
+    label.type = "text";
+    label.placeholder = "Billets d'avion";
+    label.value = item ? item.label : "";
+    label.maxLength = 80;
+
+    var amount = el("input", "note-amount");
+    amount.type = "text";
+    amount.inputMode = "decimal";
+    amount.placeholder = "500";
+    amount.value = item && item.amount ? fmtMoney(item.amount) : "";
+    amount.addEventListener("input", refreshNoteTotal);
+
+    var del = el("button", "note-del", "×");
+    del.type = "button";
+    del.title = "Retirer cette ligne";
+    del.addEventListener("click", function () {
+      wrap.remove();
+      if (!$("note-rows").children.length) addNoteRow();
+      refreshNoteTotal();
+    });
+
+    wrap.appendChild(label);
+    wrap.appendChild(amount);
+    wrap.appendChild(del);
+    return wrap;
+  }
+
+  function addNoteRow(item) {
+    var row = noteRowEl(item);
+    $("note-rows").appendChild(row);
+    return row;
+  }
+
+  function readNoteRows() {
+    return [].slice.call($("note-rows").children).map(function (wrap) {
+      return {
+        label: wrap.querySelector(".note-label").value.trim(),
+        amount: parseNum(wrap.querySelector(".note-amount").value) || 0
+      };
+    }).filter(function (item) { return item.label || item.amount; });
+  }
+
+  function refreshNoteTotal() {
+    $("note-total").textContent = fmtMoney(detailsSum(readNoteRows()));
+  }
+
+  function openNote(m, key) {
+    noteTarget = { row: m, key: key };
+    var rows = state.years[state.current].rows;
+    var items = detailsFor(rows[m], key);
+
+    $("note-title").textContent = COL_BY_KEY[key].label + " — " + MONTHS[m];
+    $("note-rows").innerHTML = "";
+
+    if (items) items.forEach(function (item) { addNoteRow(item); });
+    else {
+      // Pas encore de détail : on amorce avec le montant déjà saisi, s'il y en
+      // a un, pour ne pas le perdre en passant au détail.
+      var current = rows[m][key];
+      addNoteRow(current ? { label: "", amount: current } : null);
+    }
+
+    refreshNoteTotal();
+    $("note-dialog").showModal();
+    $("note-rows").querySelector(".note-label").focus();
+  }
+
+  $("note-add").addEventListener("click", function () {
+    addNoteRow().querySelector(".note-label").focus();
+  });
+
+  $("note-cancel").addEventListener("click", function () { $("note-dialog").close(); });
+
+  $("note-form").addEventListener("submit", function () {
+    if (!noteTarget) return;
+    var rows = state.years[state.current].rows;
+    var row = rows[noteTarget.row];
+    var items = readNoteRows();
+
+    if (items.length) {
+      row.details = row.details || {};
+      row.details[noteTarget.key] = items;
+      row[noteTarget.key] = detailsSum(items);
+    } else {
+      // Détail vidé : la case redevient saisissable à la main.
+      if (row.details) {
+        delete row.details[noteTarget.key];
+        if (!Object.keys(row.details).length) delete row.details;
+      }
+    }
+
+    noteTarget = null;
+    save();
+    render();
+  });
+
+  $("ledger-body").addEventListener("click", function (e) {
+    var btn = e.target.closest ? e.target.closest(".note-btn") : null;
+    if (btn) openNote(Number(btn.dataset.row), btn.dataset.key);
+  });
 
   /* ---------------- pont vers la synchronisation ---------------- */
   // assets/sync.js est un module, donc exécuté après ce script : il trouve
