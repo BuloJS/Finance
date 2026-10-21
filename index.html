@@ -484,6 +484,28 @@ td:hover > .note-btn, .note-btn:focus-visible { opacity: 1; }
 .note-btn:hover { color: var(--accent); }
 .note-btn.has-note { opacity: 1; color: var(--accent); }
 
+/* Rentrée : l'accès à la destination reste visible, il ne dépend pas du survol.
+   Rien de saisi → flèche discrète ; montant sans destination → invitation ;
+   destination choisie → pastille qui dit où part l'argent. */
+.note-btn.is-dest {
+  /* Posée en bas de la case : le montant occupe le milieu, la pastille ne doit
+     jamais passer dessus. */
+  top: auto; bottom: 1px; left: 2px;
+  width: auto; min-width: 14px; height: 11px; padding: 0 5px;
+  border-radius: 6px;
+  font-family: var(--mono); font-size: 9px; line-height: 11px; letter-spacing: .02em;
+  white-space: nowrap;
+  opacity: .55;
+}
+td:hover > .note-btn.is-dest, .note-btn.is-dest:focus-visible { opacity: 1; }
+.note-btn.is-dest[data-state="todo"] {
+  opacity: 1; color: var(--accent-ink);
+  border: 1px dashed var(--accent-line); line-height: 9px;
+}
+.note-btn.is-dest[data-state="set"] {
+  opacity: 1; color: var(--accent-ink); background: var(--accent-soft);
+}
+
 /* A detailed amount is the sum of its lines, so it is no longer typed here */
 .cell-input.is-detailed { cursor: pointer; font-style: italic; }
 
@@ -720,7 +742,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
             <dt>Invest bonus potentiel</dt>
             <dd><code>Rentrée − Achats</code> — ce que vos mouvements exceptionnels du mois libèrent, ou vous coûtent, <em>en plus</em> de la base.</dd>
             <dt>Affecter une rentrée</dt>
-            <dd>Le point dans le coin de la case Rentrée ouvre le détail : chaque ligne peut recevoir une <strong>destination</strong> (Livret, PEA ou PEL). Son montant rejoint alors le cumul de cette enveloppe et produit des intérêts avec elle. Sans destination, la rentrée ne compte que dans l'Invest bonus potentiel. L'Investissement ne change pas : l'argent n'est pas compté deux fois.</dd>
+            <dd>La pastille <strong>→</strong> en bas de la case Rentrée ouvre le détail (elle devient « → affecter » dès qu'un montant est saisi, puis « → Livret » une fois la destination choisie) : chaque ligne peut recevoir une <strong>destination</strong> (Livret, PEA ou PEL). Son montant rejoint alors le cumul de cette enveloppe et produit des intérêts avec elle. Sans destination, la rentrée ne compte que dans l'Invest bonus potentiel. L'Investissement ne change pas : l'argent n'est pas compté deux fois.</dd>
             <dt>Investissement</dt>
             <dd><code>(Livret + PEA + PEL) + Invest bonus potentiel</code> — ce que le mois a réellement mis de côté, une fois le bonus pris en compte. Vert au-dessus de zéro, rouge en dessous : sous zéro, vos achats exceptionnels ont mangé plus que ce que vous avez investi.</dd>
             <dd style="margin-top:6px;color:var(--ink-3)">La <strong>Base</strong> ne rentre pas dans ce calcul : elle sert d'objectif, suivi par la jauge « Base d'épargne » et par le repère sur le graphique mensuel.</dd>
@@ -897,6 +919,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
   //   row.details.rentree = [{ label: "Prime", amount: 800, dest: "livret" }, …]
   var DEST_KEYS = ["livret", "pea", "pel"];
   var DEST_LABELS = { livret: "Livret", pea: "PEA", pel: "PEL" };
+  var DEST_SHORT = { livret: "Livret", pea: "PEA", pel: "PEL" };
   var DEST_COLUMNS = { rentree: true };
 
   /** Ne garde que ce qui a la bonne forme, et renvoie null si rien ne reste. */
@@ -1242,6 +1265,12 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
             btn.title = "Détailler ce montant";
             btn.setAttribute("aria-label", "Détailler " + c.label + " — " + MONTHS[m]);
             btn.textContent = "•";
+            // La Rentrée se destine à une enveloppe : l'accès doit se voir sans
+            // survol (et exister au toucher), pas rester un point caché.
+            if (DEST_COLUMNS[c.key]) {
+              btn.classList.add("is-dest");
+              btn.textContent = "→";
+            }
             td.appendChild(btn);
             rowCells[c.key + ":note"] = btn;
           }
@@ -1319,11 +1348,19 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
         btn.title = items
           ? items.length + (items.length > 1 ? " lignes détaillées" : " ligne détaillée")
           : (DEST_COLUMNS[k] ? "Détailler ou affecter à Livret / PEA / PEL" : "Détailler ce montant");
-        if (items && DEST_COLUMNS[k]) {
+        if (DEST_COLUMNS[k]) {
           var al = allocationsFor(rows[m]);
-          var where = DEST_KEYS.filter(function (d) { return al[d]; })
-            .map(function (d) { return fmtMoney(al[d]) + " → " + DEST_LABELS[d]; });
-          if (where.length) btn.title += " · " + where.join(", ");
+          var to = DEST_KEYS.filter(function (d) { return al[d]; });
+          if (items && to.length) {
+            btn.title += " · " + to.map(function (d) { return fmtMoney(al[d]) + " → " + DEST_LABELS[d]; }).join(", ");
+          }
+          // Trois états lisibles d'un coup d'œil : rien de saisi, un montant
+          // qui n'a pas encore de destination (invitation), ou la destination.
+          var amount = rows[m][k];
+          btn.dataset.state = to.length ? "set" : (amount ? "todo" : "idle");
+          btn.textContent = to.length
+            ? "→ " + to.map(function (d) { return DEST_SHORT[d]; }).join("+")
+            : (amount ? "→ affecter" : "→");
         }
       });
 
