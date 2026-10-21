@@ -33,6 +33,17 @@ L'*Invest bonus potentiel* est ce que les mouvements exceptionnels libèrent, ou
 vous coûtent, en plus de la base. Il alimente directement la colonne
 Investissement.
 
+**Affecter une rentrée à une enveloppe.** Le point dans le coin de la case
+Rentrée (visible au survol) ouvre le détail : une ligne par rentrée, chacune avec
+une destination — Aucune, Livret, PEA ou PEL. Le montant d'une ligne affectée
+rejoint le **cumul** de son enveloppe et produit des intérêts avec elle ; une
+rentrée de 800 € affectée au Livret fait passer le Cumul Livret de 700 à 1 500 €.
+Une rentrée sans destination reste, comme avant, dans l'Invest bonus potentiel
+seulement. Rien d'autre ne bouge : Investissement, bonus, jauge de la base et
+graphique d'effort sont inchangés — l'argent n'est jamais compté deux fois —, et
+la tuile « Intérêts » retranche les montants affectés pour ne pas les prendre pour
+des gains.
+
 La **Base** ne rentre pas dans ce calcul : c'est l'objectif que vous vous fixez,
 suivi par la jauge « Base d'épargne » et par le repère posé sur chaque mois du
 graphique d'effort. Une Base laissée vide vaut zéro.

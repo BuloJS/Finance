@@ -512,6 +512,13 @@ td:hover > .note-btn, .note-btn:focus-visible { opacity: 1; }
   font-family: var(--mono); font-variant-numeric: tabular-nums;
 }
 .note-row input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.note-dest {
+  flex: 0 0 5.2rem; height: 34px; padding: 0 .4rem;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface-2); color: var(--ink);
+  font: inherit; font-size: .85rem; cursor: pointer;
+}
+.note-dest:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 
 .note-del {
   flex: 0 0 auto; width: 34px; height: 34px;
@@ -712,6 +719,8 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
             <dd>Ce que vous décidez de mettre de côté ce mois-ci. <code>Ctrl</code>+<code>D</code> la recopie sur toute l'année.</dd>
             <dt>Invest bonus potentiel</dt>
             <dd><code>Rentrée − Achats</code> — ce que vos mouvements exceptionnels du mois libèrent, ou vous coûtent, <em>en plus</em> de la base.</dd>
+            <dt>Affecter une rentrée</dt>
+            <dd>Le point dans le coin de la case Rentrée ouvre le détail : chaque ligne peut recevoir une <strong>destination</strong> (Livret, PEA ou PEL). Son montant rejoint alors le cumul de cette enveloppe et produit des intérêts avec elle. Sans destination, la rentrée ne compte que dans l'Invest bonus potentiel. L'Investissement ne change pas : l'argent n'est pas compté deux fois.</dd>
             <dt>Investissement</dt>
             <dd><code>(Livret + PEA + PEL) + Invest bonus potentiel</code> — ce que le mois a réellement mis de côté, une fois le bonus pris en compte. Vert au-dessus de zéro, rouge en dessous : sous zéro, vos achats exceptionnels ont mangé plus que ce que vous avez investi.</dd>
             <dd style="margin-top:6px;color:var(--ink-3)">La <strong>Base</strong> ne rentre pas dans ce calcul : elle sert d'objectif, suivi par la jauge « Base d'épargne » et par le repère sur le graphique mensuel.</dd>
@@ -753,7 +762,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
   <dialog id="note-dialog">
     <form method="dialog" id="note-form">
       <h3 id="note-title">Détail</h3>
-      <p class="note-hint">Une ligne par dépense. Le total remplace le montant de la case.</p>
+      <p class="note-hint" id="note-hint">Une ligne par dépense. Le total remplace le montant de la case.</p>
       <div id="note-rows"></div>
       <button type="button" class="note-add" id="note-add">+ Ajouter une ligne</button>
       <p class="note-total">Total <strong id="note-total">0 €</strong></p>
@@ -806,7 +815,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     { key: "pea",     label: "PEA",                     group: "Versements",  kind: "money", edit: true },
     { key: "pel",     label: "PEL",                     group: "Versements",  kind: "money", edit: true },
     { key: "invest",  label: "Investissement",          group: "Trésorerie",  kind: "money", calc: true, signed: true },
-    { key: "rentree", label: "Rentrée",                 group: "Trésorerie",  kind: "money", edit: true, tone: "in" },
+    { key: "rentree", label: "Rentrée",                 group: "Trésorerie",  kind: "money", edit: true, tone: "in", note: true },
     { key: "achats",  label: "Achats",                  group: "Trésorerie",  kind: "money", edit: true, tone: "out", note: true },
     { key: "bonus",   label: "Invest bonus potentiel",  group: "Trésorerie",  kind: "money", calc: true, signed: true, tone: "bonus" },
     { key: "tLivret", label: "Taux Livret",             group: "Taux annuel", kind: "rate",  edit: true },
@@ -882,6 +891,14 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
   // la somme des lignes, ce qui évite qu'un total et son détail divergent.
   var NOTE_KEYS = COLS.filter(function (c) { return c.note; }).map(function (c) { return c.key; });
 
+  // Une ligne de la Rentrée peut être affectée à une enveloppe : son montant
+  // rejoint alors le cumul de celle-ci. Sans destination, elle ne compte que
+  // dans l'Invest bonus potentiel, comme avant.
+  //   row.details.rentree = [{ label: "Prime", amount: 800, dest: "livret" }, …]
+  var DEST_KEYS = ["livret", "pea", "pel"];
+  var DEST_LABELS = { livret: "Livret", pea: "PEA", pel: "PEL" };
+  var DEST_COLUMNS = { rentree: true };
+
   /** Ne garde que ce qui a la bonne forme, et renvoie null si rien ne reste. */
   function cleanDetails(raw) {
     if (!raw || typeof raw !== "object") return null;
@@ -890,13 +907,25 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
       if (!Array.isArray(raw[key])) return;
       var items = raw[key]
         .map(function (item) {
-          return {
+          var clean = {
             label: String(item && item.label != null ? item.label : "").slice(0, 80),
             amount: Number(item && item.amount) || 0
           };
+          if (DEST_COLUMNS[key] && item && DEST_KEYS.indexOf(item.dest) !== -1) clean.dest = item.dest;
+          return clean;
         })
         .filter(function (item) { return item.label || item.amount; });
       if (items.length) { out = out || {}; out[key] = items; }
+    });
+    return out;
+  }
+
+  /** Part de la Rentrée d'une ligne affectée à chaque enveloppe. */
+  function allocationsFor(row) {
+    var out = { livret: 0, pea: 0, pel: 0 };
+    var items = detailsFor(row, "rentree");
+    if (items) items.forEach(function (item) {
+      if (item.dest && out.hasOwnProperty(item.dest)) out[item.dest] += Number(item.amount) || 0;
     });
     return out;
   }
@@ -1028,32 +1057,41 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     var accrued = { livret: 0, pea: 0, pel: 0 };
     var out = [];
     var runningDeposits = 0;
-    var sum = { base: 0, versements: 0, rentree: 0, achats: 0, bonus: 0, invest: 0, monthsSaved: 0 };
+    var sum = { base: 0, versements: 0, allocated: 0, rentree: 0, achats: 0, bonus: 0, invest: 0, monthsSaved: 0 };
 
     for (var m = 0; m < 12; m++) {
       var r = rows[m];
-      var line = { rates: {}, deposits: {}, cumuls: {}, accrued: {}, credited: {} };
+      var line = { rates: {}, deposits: {}, cumuls: {}, accrued: {}, credited: {}, allocated: {} };
       var depositsTotal = 0;
+      var allocations = allocationsFor(r);
+      var allocatedTotal = 0;
 
       ENVELOPES.forEach(function (e) {
         var rate = r[e.rate];
         if (rate != null) lastRate[e.key] = rate;
         var effRate = lastRate[e.key];
         var dep = r[e.key] || 0;
+        // Rentrée affectée à cette enveloppe : elle grossit le solde mais n'est
+        // pas un versement saisi, donc ni Investissement ni la jauge de la
+        // base ne la recomptent (elle est déjà dans l'Invest bonus potentiel).
+        var alloc = allocations[e.key];
 
         if (e.annualCredit) {
           // Les intérêts s'accumulent sur le solde du mois sans y être
           // ajoutés, puis sont versés en décembre. Un solde de juin
           // correspond donc à ce que la banque affiche vraiment.
           accrued[e.key] += bal[e.key] * (effRate / 1200);
-          bal[e.key] += dep;
+          bal[e.key] += dep + alloc;
           if (m === 11) {
             bal[e.key] += accrued[e.key];
             line.credited[e.key] = accrued[e.key];
           }
         } else {
-          bal[e.key] = bal[e.key] * (1 + effRate / 1200) + dep;
+          bal[e.key] = bal[e.key] * (1 + effRate / 1200) + dep + alloc;
         }
+
+        line.allocated[e.key] = alloc;
+        allocatedTotal += alloc;
 
         line.accrued[e.key] = e.annualCredit ? accrued[e.key] : 0;
         line.rates[e.key] = effRate;
@@ -1071,6 +1109,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
       line.filled = EDIT_KEYS.some(function (k) { return r[k] != null && !/^t[A-Z]/.test(k); });
       line.base = base;
       line.versements = depositsTotal;
+      line.allocatedTotal = allocatedTotal;
       line.rentree = rentree;
       line.achats = achats;
       // What the month really put aside: the three envelopes, adjusted by the
@@ -1083,6 +1122,7 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
 
       sum.base += base;
       sum.versements += depositsTotal;
+      sum.allocated += allocatedTotal;
       sum.rentree += rentree;
       sum.achats += achats;
       sum.bonus += line.bonus;
@@ -1278,7 +1318,13 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
         btn.classList.toggle("has-note", Boolean(items));
         btn.title = items
           ? items.length + (items.length > 1 ? " lignes détaillées" : " ligne détaillée")
-          : "Détailler ce montant";
+          : (DEST_COLUMNS[k] ? "Détailler ou affecter à Livret / PEA / PEL" : "Détailler ce montant");
+        if (items && DEST_COLUMNS[k]) {
+          var al = allocationsFor(rows[m]);
+          var where = DEST_KEYS.filter(function (d) { return al[d]; })
+            .map(function (d) { return fmtMoney(al[d]) + " → " + DEST_LABELS[d]; });
+          if (where.length) btn.title += " · " + where.join(", ");
+        }
       });
 
       // On a month that has entries, an exact zero is a real result, so it
@@ -1414,7 +1460,9 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     var monthsSaved = s.monthsSaved;
     var perMonth = monthsSaved ? s.versements / monthsSaved : 0;
     var placed = s.base > 0 ? (s.versements / s.base) * 100 : 0;
-    var gain = view.endTotal - view.startTotal - s.versements;
+    // Ce qui est entré dans les enveloppes sans être un intérêt : les versements
+    // saisis et les rentrées affectées.
+    var gain = view.endTotal - view.startTotal - s.versements - s.allocated;
 
     var host = $("summary");
     host.innerHTML = "";
@@ -2039,9 +2087,11 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
   function noteRowEl(item) {
     var wrap = el("div", "note-row");
 
+    var withDest = Boolean(noteTarget && DEST_COLUMNS[noteTarget.key]);
+
     var label = el("input", "note-label");
     label.type = "text";
-    label.placeholder = "Billets d'avion";
+    label.placeholder = withDest ? "Prime" : "Billets d'avion";
     label.value = item ? item.label : "";
     label.maxLength = 80;
 
@@ -2063,6 +2113,23 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
 
     wrap.appendChild(label);
     wrap.appendChild(amount);
+
+    if (withDest) {
+      var dest = el("select", "note-dest");
+      dest.title = "Enveloppe qui reçoit ce montant";
+      dest.setAttribute("aria-label", "Destination");
+      var none = el("option", null, "Aucune");
+      none.value = "";
+      dest.appendChild(none);
+      DEST_KEYS.forEach(function (k) {
+        var opt = el("option", null, DEST_LABELS[k]);
+        opt.value = k;
+        dest.appendChild(opt);
+      });
+      dest.value = item && item.dest ? item.dest : "";
+      wrap.appendChild(dest);
+    }
+
     wrap.appendChild(del);
     return wrap;
   }
@@ -2075,10 +2142,13 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
 
   function readNoteRows() {
     return [].slice.call($("note-rows").children).map(function (wrap) {
-      return {
+      var item = {
         label: wrap.querySelector(".note-label").value.trim(),
         amount: parseNum(wrap.querySelector(".note-amount").value) || 0
       };
+      var dest = wrap.querySelector(".note-dest");
+      if (dest && dest.value) item.dest = dest.value;
+      return item;
     }).filter(function (item) { return item.label || item.amount; });
   }
 
@@ -2092,6 +2162,9 @@ footer.credits { text-align: center; color: var(--ink-3); font-size: 11.5px; pad
     var items = detailsFor(rows[m], key);
 
     $("note-title").textContent = COL_BY_KEY[key].label + " — " + MONTHS[m];
+    $("note-hint").textContent = DEST_COLUMNS[key]
+      ? "Une ligne par rentrée. Choisissez l'enveloppe qui la reçoit : son montant rejoint alors le cumul. « Aucune » la laisse seulement dans l'Invest bonus potentiel."
+      : "Une ligne par dépense. Le total remplace le montant de la case.";
     $("note-rows").innerHTML = "";
 
     if (items) items.forEach(function (item) { addNoteRow(item); });
